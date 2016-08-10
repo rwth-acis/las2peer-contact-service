@@ -101,22 +101,39 @@ public class ContactService extends Service {
 	 * 
 	 * @param name
 	 * 			Login name of the contact you want to add
+	 * @return 
+	 * 			Returns a HttpResponse 
 	 */
-	
-	public void addContact(String name) {
+	@GET
+	@Path("/contact/{value}")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "addContact",
+	notes = "Add a contact")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Contact added"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse addContact(@PathParam("value") String name) {
 		try{
 			Envelope env = load(contact_prefix);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			long userID = getContext().getLocalNode().getAgentIdForLogin(name);
-			cc.addContact(userID);
+			boolean added = cc.addContact(userID);
 			env.updateContent(cc);
 			store(env);
+			if(added)
+				return new HttpResponse("Contact added", HttpURLConnection.HTTP_OK);
+			else
+				return new HttpResponse("Contact already in list", HttpURLConnection.HTTP_BAD_REQUEST);
+		} catch(AgentNotKnownException ex){
+			return new HttpResponse("Agent does not exist", HttpURLConnection.HTTP_BAD_REQUEST);
 		} catch (Exception e) {
 			// write error to logfile and console
 			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 			// create and publish a monitoring message
 			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 		}
+		return new HttpResponse("Unknown Error", HttpURLConnection.HTTP_BAD_REQUEST);
 	}
 
 	/**
@@ -124,22 +141,39 @@ public class ContactService extends Service {
 	 * 
 	 * @param name
 	 * 			Login name of the contact you want to delete
+	 * @return 
+	 * 			Returns a HttpResponse 
 	 */
-	
-	public void removeContact(String name) {
+	@POST
+	@Path("/contact/{value}")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Contact removed"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	@ApiOperation(value = "removeContact",
+	notes = "removes a contact")
+	public HttpResponse removeContact(@PathParam("value") String name) {
 		try{
 			Envelope env = load(contact_prefix);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			long userID = getContext().getLocalNode().getAgentIdForLogin(name);
-			cc.removeContact(userID);
+			boolean deleted = cc.removeContact(userID);
 			env.updateContent(cc);
 			store(env);
+			if(deleted)
+				return new HttpResponse("Contact removed", HttpURLConnection.HTTP_OK);
+			else
+				return new HttpResponse("User is not one of your contacts.", HttpURLConnection.HTTP_BAD_REQUEST);
+		} catch(AgentNotKnownException ex){
+			return new HttpResponse("Agent does not exist", HttpURLConnection.HTTP_BAD_REQUEST);
 		} catch (Exception e) {
 			// write error to logfile and console
 			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 			// create and publish a monitoring message
 			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 		}
+		return new HttpResponse("Could not delete Contact", HttpURLConnection.HTTP_BAD_REQUEST);
 	}
 	
 	/**
@@ -167,16 +201,28 @@ public class ContactService extends Service {
 	/**
 	 * Adds a group
 	 * 
-	 * @param name
+	 * @param content
 	 * 			Name of your group
 	 * @return 
-	 * 			Returns the group id
+	 * 			Returns a HttpResponse 
 	 * 
 	 */
-	public String addGroup(String name) throws AgentNotKnownException{
+	@POST
+	@Path("/group")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	@ApiOperation(value = "createGroup",
+	notes = "Creates a group")
+	public HttpResponse addGroup(@ContentParam String content){
 		Agent[] members = new Agent[1];
 		members[0]= getContext().getMainAgent();
 		try{
+			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
+			JSONObject params = (JSONObject)parser.parse(content);
+			String name = (String) params.get("name");
 			GroupAgent groupAgent = GroupAgent.createGroupAgent(members);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			getContext().getLocalNode().storeAgent(groupAgent);
@@ -186,7 +232,7 @@ public class ContactService extends Service {
 			cc.addGroup(name, groupAgent.getId());
 			env.updateContent(cc);
 			store(env);
-			return ""+groupAgent.getId();
+			return new HttpResponse(""+groupAgent.getId(), HttpURLConnection.HTTP_OK);
 		}catch(Exception e){
 			// write error to logfile and console
 			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -194,44 +240,109 @@ public class ContactService extends Service {
 			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 			e.printStackTrace();
 		}
-		return null;
+		return new HttpResponse("Fehler", HttpURLConnection.HTTP_OK);
+	}
+	
+	/**
+	 * Get a group
+	 * 
+	 * @param name
+	 * 			Name of your group
+	 * @return 
+	 * 			Returns a HttpResponse 
+	 * 
+	 */
+	@GET
+	@Path("/groupID/{value}")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "getGroup",
+	notes = "Get a group via name")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse getGroupByName(@PathParam("value") String name){
+		try{
+			Envelope env = load(group_prefix);
+			ContactContainer cc = env.getContent(ContactContainer.class);
+			Long id = cc.getGroupId(name);
+			env.updateContent(cc);
+			store(env);
+			return new HttpResponse(""+id, HttpURLConnection.HTTP_OK);
+		}catch(Exception e){
+			// write error to logfile and console
+			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
+			// create and publish a monitoring message
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+			e.printStackTrace();
+		}
+		return new HttpResponse("Error getting groupID", HttpURLConnection.HTTP_BAD_REQUEST);
 	}
 
 	/**
 	 * Removes a group
 	 * 
-	 * @param name
+	 * @param content
 	 * 			Name of the group you want to delete
+	 * @return 
+	 * 			Returns a HttpResponse 
 	 */
-	public void removeGroup(String name){
+	@POST
+	@Path("/group/remove")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Group removed"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	@ApiOperation(value = "removeGroup",
+	notes = "removes a group")
+	public HttpResponse removeGroup(@ContentParam String content){
 		try{
+			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
+			JSONObject params = (JSONObject)parser.parse(content);
+			String name = (String) params.get("name");
 			Envelope env = load(group_prefix);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			cc.removeGroup(cc.getGroups().get(name));
 			env.updateContent(cc);
 			store(env);
+			return new HttpResponse("Ok", HttpURLConnection.HTTP_OK);
 		}catch(Exception e){
 			// write error to logfile and console
 			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 			// create and publish a monitoring message
 			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 		}
+		return new HttpResponse("Fehler", HttpURLConnection.HTTP_OK);
 	}
 	
 	/**
 	 * Adds a member to a group
 	 * 
-	 * @param groupName
-	 * 			Name of the group
-	 * @param userName
-	 * 			Name of the user
+	 * @param content
+	 * 			Name of the group and the user
+	 * @return 
+	 * 			Returns a HttpResponse 
 	 */
-
-	public void addGroupMember(String groupName,String userName){
+	@POST
+	@Path("/groupmember")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Update successfull"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	@ApiOperation(value = "addGroupMember",
+	notes = "Add a member to a group")
+	public HttpResponse addGroupMember(@ContentParam String content){
 		try{
+			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
+			JSONObject params = (JSONObject)parser.parse(content);
+			String groupName = (String) params.get("groupName");
+			String userName = (String) params.get("userName");
 			Envelope env = load(group_prefix);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			GroupAgent groupAgent = (GroupAgent) getContext().getLocalNode().getAgent(cc.getGroups().get(groupName));
+			env.updateContent(cc);
 			store(env);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			long addID = getContext().getLocalNode().getAgentIdForLogin(userName);
@@ -243,22 +354,36 @@ public class ContactService extends Service {
 			// create and publish a monitoring message
 			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 		}
+		return new HttpResponse("Fehler", HttpURLConnection.HTTP_OK);
 	}
 	
 	/**
 	 * Removes a member of a group
 	 * 
-	 * @param groupName
-	 * 			Name of the group
-	 * @param userName
-	 * 			Name of the user
+	 * @param content
+	 * 			Name of the group and the user
+	 * @return 
+	 * 			Returns a HttpResponse 
 	 */
-
-	public void removeGroupMember(String groupName,String userName){
+	@POST
+	@Path("/groupmember/remove")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Update successfull"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	@ApiOperation(value = "removeGroupMember",
+	notes = "Add a member to a group")
+	public HttpResponse removeGroupMember(@ContentParam String content){
 		try{
+			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
+			JSONObject params = (JSONObject)parser.parse(content);
+			String groupName = (String) params.get("groupName");
+			String userName = (String) params.get("userName");
 			Envelope env = load(group_prefix);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			GroupAgent groupAgent = (GroupAgent) getContext().getLocalNode().getAgent(cc.getGroups().get(groupName));
+			env.updateContent(cc);
 			store(env);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			long addID = getContext().getLocalNode().getAgentIdForLogin(userName);
@@ -269,6 +394,7 @@ public class ContactService extends Service {
 			// create and publish a monitoring message
 			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 		}
+		return new HttpResponse("Fehler", HttpURLConnection.HTTP_OK);
 	}
 
 	
@@ -278,6 +404,7 @@ public class ContactService extends Service {
 			Envelope env = load(group_prefix);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			GroupAgent groupAgent = (GroupAgent) getContext().getLocalNode().getAgent(cc.getGroups().get(name));
+			env.updateContent(cc);
 			store(env);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			Long[] membersIds = groupAgent.getMemberList();
@@ -341,24 +468,7 @@ public class ContactService extends Service {
 		return null;
 	}
 
-	// //////////////////////////////////////////////////////////////////////////////////////
-	// RESTFull Functions
-	// //////////////////////////////////////////////////////////////////////////////////////
-
-	@GET
-	@Path("/contact/{value}")
-	@Produces(MediaType.TEXT_PLAIN)
-	@ApiOperation(value = "addContact",
-	notes = "Add a contact")
-	@ApiResponses(value = {
-			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
-			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
-	})
-	public HttpResponse addContactREST(@PathParam("value") String name) {
-		addContact(name);
-		String returnString = "result";//+getContext().getMainAgent().getId();
-		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
-	}
+	//asdf
 
 	@GET
 	@Path("/contacts")
@@ -377,28 +487,6 @@ public class ContactService extends Service {
 		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
 	}
 	
-	@POST
-	@Path("/group")
-	@Produces(MediaType.TEXT_PLAIN)
-	@ApiResponses(value = {
-			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
-			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
-	})
-	@ApiOperation(value = "createGroup",
-	notes = "Creates a group")
-	public HttpResponse createGroupREST(@ContentParam String content) {
-		String result = "";
-		try {
-			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
-			JSONObject params = (JSONObject)parser.parse(content);
-			result = addGroup((String) params.get("name"));
-		} catch (Exception e) {
-			// one may want to handle some exceptions differently
-			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
-		}
-		return new HttpResponse(result, HttpURLConnection.HTTP_OK);
-	}
-	
 	@GET
 	@Path("/group/{value}")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -408,7 +496,7 @@ public class ContactService extends Service {
 			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
 			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
 	})
-	public HttpResponse getGroup(@PathParam("value") String groupID) {
+	public HttpResponse getGroupREST(@PathParam("value") String groupID) {
 		long id = Long.parseLong(groupID);
 		String returnString = "GroupAgent";
 		try{
@@ -422,7 +510,51 @@ public class ContactService extends Service {
 		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
 	}
 	
-
+	@GET
+	@Path("/group")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "getGroup",
+	notes = "get all your groups")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse getGroupsREST() {
+		String returnString = "Error";
+		try{
+			returnString = getGroupNames()+"";
+		}catch(Exception e){
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+			e.printStackTrace();
+		}
+		
+		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
+	}
+	
+	@GET
+	@Path("/groupmember/{value}")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "getGroupMember",
+	notes = "get all member of your group")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse getGroupMemberREST(@PathParam("value") String name) {
+		String rs = "Error";
+		try {
+			rs = getGroupMembers(name).toString();
+		} catch (Exception e) {
+			// one may want to handle some exceptions differently
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+		}
+		return new HttpResponse(rs, HttpURLConnection.HTTP_OK);
+	}
+	
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// RMI Calls 
+	// //////////////////////////////////////////////////////////////////////////////////////
+	
 	@POST
 	@Path("/user")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -432,7 +564,7 @@ public class ContactService extends Service {
 	})
 	@ApiOperation(value = "updateUserInformation",
 	notes = "Updates the name and the userimage")
-	public HttpResponse updateUserInformation(@ContentParam String content) {
+	public HttpResponse updateUserInformationREST(@ContentParam String content) {
 		try {
 			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 			JSONObject params = (JSONObject)parser.parse(content);
@@ -481,7 +613,96 @@ public class ContactService extends Service {
 		}
 		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
 	}
-
+	
+	@GET
+	@Path("/user/{name}")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "getUserInformation",
+	notes = "Returns the name and the userimage")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse getUserInformation(@PathParam("name") String name) {
+		String returnString = "";
+		try {
+			// RMI call without parameters
+			String[] fields = {"firstName","lastName","userImage"};
+			Object result = this.invokeServiceMethod("i5.las2peer.services.userInformationService.UserInformationService@0.1", "get",
+					new Serializable[] { getContext().getLocalNode().getAgentIdForLogin(name), fields });
+			if (result != null) {
+				@SuppressWarnings({"unchecked"})
+				HashMap<String, Serializable> hashMap = (HashMap<String,Serializable>)result;
+				returnString = hashMap.toString();
+			}
+		} catch (Exception e) {
+			// one may want to handle some exceptions differently
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+		}
+		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
+	}
+	
+	@GET
+	@Path("/permission")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "getUserPermission",
+	notes = "Returns a field of permissions")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse getUserPermissions() {
+		String returnString = "No Response";
+		try {
+			// RMI call
+			String[] fields = {"firstName","lastName","userImage"};
+			Object result = this.invokeServiceMethod("i5.las2peer.services.userInformationService.UserInformationService@0.1", "getPermissions",
+					new Serializable[] { fields });
+			if (result != null) {
+				@SuppressWarnings({"unchecked"})
+				HashMap<String, Serializable> hashMap = (HashMap<String,Serializable>)result;
+				System.out.println(hashMap.toString());
+				returnString = hashMap.toString();
+			}else{
+				return new HttpResponse("Setting permission failed.", HttpURLConnection.HTTP_BAD_REQUEST);
+			}
+		} catch (Exception e) {
+			// one may want to handle some exceptions differently
+			e.printStackTrace();
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+		}
+		return new HttpResponse(returnString, HttpURLConnection.HTTP_OK);
+	}
+	
+	@POST
+	@Path("/permission")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Update successfull"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	@ApiOperation(value = "updateUserPermission",
+	notes = "Updates the name and the userimage")
+	public HttpResponse updateUserPermissionREST(@ContentParam String content) {
+		try {
+			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
+			JSONObject params = (JSONObject)parser.parse(content);
+			HashMap<String, Serializable> m = new HashMap<String, Serializable>();
+			m.put("firstName", (Boolean) params.get("firstName"));
+			m.put("lastName", (Boolean) params.get("lastName"));
+			m.put("userImage", (Boolean) params.get("userImage"));
+			// RMI call without parameters
+			Object result = this.invokeServiceMethod("i5.las2peer.services.userInformationService.UserInformationService@0.1", "setPermissions",
+					new Serializable[] { m });
+			if (result != null) {
+				System.out.println("setting permission: "+((Boolean) result));
+			}
+		} catch (Exception e) {
+			// one may want to handle some exceptions differently
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+		}
+		return new HttpResponse("", HttpURLConnection.HTTP_OK);
+	}
 
 	/**
 	 * Function to get the login name of an agent

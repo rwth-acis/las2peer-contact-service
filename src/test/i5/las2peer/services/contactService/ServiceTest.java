@@ -33,8 +33,12 @@ public class ServiceTest {
 	private static WebConnector connector;
 	private static ByteArrayOutputStream logStream;
 
-	private static UserAgent testAgent;
-	private static final String testPass = "adamspass";
+	private static UserAgent agentAdam;
+	private static UserAgent agentEve;
+	private static UserAgent agentAbel;
+	private static final String passAdam = "adamspass";
+	private static final String passEve  = "evespass";
+	private static final String passAbel = "abelspass";
 
 	private static final String mainPath = "contacts/";
 
@@ -50,9 +54,15 @@ public class ServiceTest {
 
 		// start node
 		node = LocalNode.newNode();
-		testAgent = MockAgentFactory.getAdam();
-		testAgent.unlockPrivateKey(testPass); // agent must be unlocked in order to be stored
-		node.storeAgent(testAgent);
+		agentAdam = MockAgentFactory.getAdam();
+		agentAdam.unlockPrivateKey(passAdam);
+		agentEve = MockAgentFactory.getEve();
+		agentEve.unlockPrivateKey(passEve);
+		agentAbel = MockAgentFactory.getAbel();
+		agentAbel.unlockPrivateKey(passAbel);
+		node.storeAgent(agentAdam);
+		node.storeAgent(agentEve);
+		node.storeAgent(agentAbel);
 		node.launch();
 
 		// during testing, the specified service version does not matter
@@ -68,13 +78,15 @@ public class ServiceTest {
 		connector.setLogStream(new PrintStream(logStream));
 		connector.start(node);
 		Thread.sleep(1000); // wait a second for the connector to become ready
-		testAgent = MockAgentFactory.getAdam(); // get a locked agent
+		agentAdam = MockAgentFactory.getAdam();
+		agentEve = MockAgentFactory.getEve();
+		agentAbel = MockAgentFactory.getAbel();
 
 		connector.updateServiceList();
 		// avoid timing errors: wait for the repository manager to get all services before continuing
 		try {
 			System.out.println("waiting..");
-			Thread.sleep(10000);
+			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -104,52 +116,110 @@ public class ServiceTest {
 
 	}
 
+	
+
 	/**
 	 * 
-	 * Tests the validation method.
+	 * Test adding a contact
 	 * 
 	 */
+	
 	@Test
-	public void testGet() {
+	public void testAddRemoveContact() {
 		MiniClient c = new MiniClient();
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(testAgent.getId()), testPass);
-			ClientResponse result = c.sendRequest("GET", mainPath + "get", "");
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+
+			// Add a contact
+			ClientResponse result = c.sendRequest("GET", mainPath + "contact/eve1st", ""); 
 			assertEquals(200, result.getHttpCode());
-			assertTrue(result.getResponse().trim().contains("result")); // YOUR RESULT VALUE HERE
-			System.out.println("Result of 'testGet': " + result.getResponse().trim());
+			assertTrue(result.getResponse().trim().contains("Contact added")); 
+			System.out.println("Result of 'testAddRemoveContact': " + result.getResponse().trim());
+
+			// Add the same contact again
+			ClientResponse result2 = c.sendRequest("GET", mainPath + "contact/eve1st", ""); 
+			assertEquals(400, result2.getHttpCode());
+			assertTrue(result2.getResponse().trim().contains("Contact already in list")); 
+			System.out.println("Result of 'testAddRemoveContact': " + result2.getResponse().trim());
+			
+			// Add a contact that does not exist
+			ClientResponse result3 = c.sendRequest("GET", mainPath + "contact/eve2nd", ""); 
+			assertEquals(400, result3.getHttpCode());
+			assertTrue(result3.getResponse().trim().contains("Agent does not exist")); 
+			System.out.println("Result of 'testAddRemoveContact': " + result3.getResponse().trim());
+			
+			// Remove Contact
+			ClientResponse result4 = c.sendRequest("POST", mainPath + "contact/eve1st", ""); 
+			assertEquals(200, result4.getHttpCode());
+			assertTrue(result4.getResponse().trim().contains("Contact removed")); 
+			System.out.println("Result of 'testAddRemoveContact': " + result4.getResponse().trim());
+			
+			// Try to remove contact again
+			ClientResponse result5 = c.sendRequest("POST", mainPath + "contact/eve1st", ""); 
+			assertEquals(400, result5.getHttpCode());
+			assertTrue(result5.getResponse().trim().contains("User is not one of your contacts.")); 
+			System.out.println("Result of 'testAddRemoveContact': " + result5.getResponse().trim());
+			
+			// Remove user that does not exist
+			ClientResponse result6 = c.sendRequest("POST", mainPath + "contact/eve2nd", ""); 
+			assertEquals(400, result6.getHttpCode());
+			assertTrue(result6.getResponse().trim().contains("Agent does not exist")); 
+			System.out.println("Result of 'testAddRemoveContact': " + result6.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
 		}
-
 	}
-
-	/**
-	 * 
-	 * Test the example method that consumes one path parameter which we give the value "testInput" in this test.
-	 * 
-	 */
+	
 	@Test
-	public void testPost() {
+	public void testGetContacts() {
 		MiniClient c = new MiniClient();
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(testAgent.getId()), testPass);
-			ClientResponse result = c.sendRequest("POST", mainPath + "post/testInput", ""); // testInput is
-																							// the pathParam
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+
+			// Add a contact
+			ClientResponse result = c.sendRequest("GET", mainPath + "contacts", ""); 
 			assertEquals(200, result.getHttpCode());
-			assertTrue(result.getResponse().trim().contains("testInput")); // "testInput" name is part of response
-			System.out.println("Result of 'testPost': " + result.getResponse().trim());
+			assertTrue(result.getResponse().trim().contains("{\"users\":[]}")); 
+			System.out.println("Result of 'testGetContacts': " + result.getResponse().trim());
+			
+			
+			// with one contact
+			c.sendRequest("GET", mainPath + "contact/eve1st", "");
+			ClientResponse result2 = c.sendRequest("GET", mainPath + "contacts", ""); 
+			assertEquals(200, result2.getHttpCode());
+			assertTrue(result2.getResponse().trim().contains("{\"users\":[\"eve1st\"]}")); 
+			System.out.println("Result of 'testGetContacts': " + result2.getResponse().trim());
+			
+			// with more than one contact
+			c.sendRequest("GET", mainPath + "contact/abel", "");
+			ClientResponse result3 = c.sendRequest("GET", mainPath + "contacts", ""); 
+			assertEquals(200, result3.getHttpCode());
+			assertTrue(result3.getResponse().trim().contains("eve1st")); 
+			assertTrue(result3.getResponse().trim().contains("abel")); 
+			System.out.println("Result of 'testGetContacts': " + result3.getResponse().trim());
+
+			// Remove Contacts
+			c.sendRequest("POST", mainPath + "contact/eve1st", "");
+			c.sendRequest("POST", mainPath + "contact/abel", "");
+			
+			// Check if list is empty again
+			ClientResponse result4 = c.sendRequest("GET", mainPath + "contacts", ""); 
+			assertEquals(200, result4.getHttpCode());
+			assertTrue(result4.getResponse().trim().contains("{\"users\":[]}")); 
+			System.out.println("Result of 'testGetContacts': " + result4.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
 		}
 	}
-
+	
+	
+	
 	/**
 	 * Test the TemplateService for valid rest mapping. Important for development.
 	 */

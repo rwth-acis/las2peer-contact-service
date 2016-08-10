@@ -21,8 +21,8 @@ public class ContactContainer implements Serializable {
 		groups = new HashMap<String, Long>();
 	}
 
-	public void addContact(Long id) {
-		userList.add(id);
+	public boolean addContact(Long id) {
+		return userList.add(id);
 	}
 
 	public void addGroup(String name, Long id) {
@@ -33,8 +33,8 @@ public class ContactContainer implements Serializable {
 		return userList;
 	}
 	
-	public void removeContact(Long id){
-		userList.remove(id);
+	public boolean removeContact(Long id){
+		return userList.remove(id);
 	}
 	
 	public HashMap<String,Long> getGroups(){
