@@ -218,6 +218,24 @@ public class ServiceTest {
 		}
 	}
 	
+	@Test
+	public void testGroups() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+
+			// Add a contact
+			ClientResponse result = c.sendRequest("POST", mainPath + "group", "{\"name\":\"testGroup\"}"); 
+			assertEquals(200, result.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
 	
 	
 	/**

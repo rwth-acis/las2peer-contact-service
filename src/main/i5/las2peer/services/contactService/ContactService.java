@@ -84,6 +84,7 @@ public class ContactService extends Service {
 	private final L2pLogger logger = L2pLogger.getInstance(ContactService.class.getName());
 	private final String contact_prefix = "contacts_";
 	private final String group_prefix = "groups_";
+	private final String address_prefix = "addressbook_";
 
 	public ContactService() {
 		// read and set properties values
@@ -115,18 +116,19 @@ public class ContactService extends Service {
 	})
 	public HttpResponse addContact(@PathParam("value") String name) {
 		try{
-			Envelope env = load(contact_prefix);
+			Agent owner = getContext().getMainAgent();
+			Envelope env = load(contact_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			long userID = getContext().getLocalNode().getAgentIdForLogin(name);
 			boolean added = cc.addContact(userID);
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			if(added)
 				return new HttpResponse("Contact added", HttpURLConnection.HTTP_OK);
 			else
 				return new HttpResponse("Contact already in list", HttpURLConnection.HTTP_BAD_REQUEST);
 		} catch(AgentNotKnownException ex){
-			return new HttpResponse("Agent does not exist", HttpURLConnection.HTTP_BAD_REQUEST);
+			return new HttpResponse("Agent does not exist", HttpURLConnection.HTTP_NOT_FOUND);
 		} catch (Exception e) {
 			// write error to logfile and console
 			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -155,12 +157,13 @@ public class ContactService extends Service {
 	notes = "removes a contact")
 	public HttpResponse removeContact(@PathParam("value") String name) {
 		try{
-			Envelope env = load(contact_prefix);
+			Agent owner = getContext().getMainAgent();
+			Envelope env = load(contact_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			long userID = getContext().getLocalNode().getAgentIdForLogin(name);
 			boolean deleted = cc.removeContact(userID);
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			if(deleted)
 				return new HttpResponse("Contact removed", HttpURLConnection.HTTP_OK);
 			else
@@ -183,10 +186,11 @@ public class ContactService extends Service {
 	 */
 	public ArrayList<String> getContacts() {
 		try{
-			Envelope env = load(contact_prefix);
+			Agent owner = getContext().getMainAgent();
+			Envelope env = load(contact_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			HashSet<Long> userList = cc.getUserList();
 			return getNames(userList);
 		} catch (Exception e) {
@@ -220,6 +224,7 @@ public class ContactService extends Service {
 		Agent[] members = new Agent[1];
 		members[0]= getContext().getMainAgent();
 		try{
+			Agent owner = getContext().getMainAgent();
 			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 			JSONObject params = (JSONObject)parser.parse(content);
 			String name = (String) params.get("name");
@@ -227,11 +232,11 @@ public class ContactService extends Service {
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			getContext().getLocalNode().storeAgent(groupAgent);
 			
-			Envelope env = load(group_prefix);
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			cc.addGroup(name, groupAgent.getId());
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			return new HttpResponse(""+groupAgent.getId(), HttpURLConnection.HTTP_OK);
 		}catch(Exception e){
 			// write error to logfile and console
@@ -263,11 +268,12 @@ public class ContactService extends Service {
 	})
 	public HttpResponse getGroupByName(@PathParam("value") String name){
 		try{
-			Envelope env = load(group_prefix);
+			Agent owner = getContext().getMainAgent();
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			Long id = cc.getGroupId(name);
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			return new HttpResponse(""+id, HttpURLConnection.HTTP_OK);
 		}catch(Exception e){
 			// write error to logfile and console
@@ -298,14 +304,15 @@ public class ContactService extends Service {
 	notes = "removes a group")
 	public HttpResponse removeGroup(@ContentParam String content){
 		try{
+			Agent owner = getContext().getMainAgent();
 			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 			JSONObject params = (JSONObject)parser.parse(content);
 			String name = (String) params.get("name");
-			Envelope env = load(group_prefix);
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			cc.removeGroup(cc.getGroups().get(name));
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			return new HttpResponse("Ok", HttpURLConnection.HTTP_OK);
 		}catch(Exception e){
 			// write error to logfile and console
@@ -335,15 +342,16 @@ public class ContactService extends Service {
 	notes = "Add a member to a group")
 	public HttpResponse addGroupMember(@ContentParam String content){
 		try{
+			Agent owner = getContext().getMainAgent();
 			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 			JSONObject params = (JSONObject)parser.parse(content);
 			String groupName = (String) params.get("groupName");
 			String userName = (String) params.get("userName");
-			Envelope env = load(group_prefix);
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			GroupAgent groupAgent = (GroupAgent) getContext().getLocalNode().getAgent(cc.getGroups().get(groupName));
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			long addID = getContext().getLocalNode().getAgentIdForLogin(userName);
 			groupAgent.addMember(getContext().getAgent(addID));
@@ -376,15 +384,16 @@ public class ContactService extends Service {
 	notes = "Add a member to a group")
 	public HttpResponse removeGroupMember(@ContentParam String content){
 		try{
+			Agent owner = getContext().getMainAgent();
 			JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 			JSONObject params = (JSONObject)parser.parse(content);
 			String groupName = (String) params.get("groupName");
 			String userName = (String) params.get("userName");
-			Envelope env = load(group_prefix);
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			GroupAgent groupAgent = (GroupAgent) getContext().getLocalNode().getAgent(cc.getGroups().get(groupName));
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			long addID = getContext().getLocalNode().getAgentIdForLogin(userName);
 			groupAgent.removeMember(getContext().getAgent(addID));
@@ -401,11 +410,12 @@ public class ContactService extends Service {
 	
 	public ArrayList<String> getGroupMembers(String name){
 		try{
-			Envelope env = load(group_prefix);
+			Agent owner = getContext().getMainAgent();
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			GroupAgent groupAgent = (GroupAgent) getContext().getLocalNode().getAgent(cc.getGroups().get(name));
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			groupAgent.unlockPrivateKey(getContext().getMainAgent());
 			Long[] membersIds = groupAgent.getMemberList();
 			return getNames(membersIds);
@@ -420,10 +430,11 @@ public class ContactService extends Service {
 
 	public Set<String> getGroupNames() {
 		try{
-			Envelope env = load(group_prefix);
+			Agent owner = getContext().getMainAgent();
+			Envelope env = load(group_prefix,owner);
 			ContactContainer cc = env.getContent(ContactContainer.class);
 			env.updateContent(cc);
-			store(env);
+			store(env,owner);
 			return cc.getGroups().keySet();
 		} catch (Exception e) {
 			// write error to logfile and console
@@ -550,6 +561,69 @@ public class ContactService extends Service {
 		}
 		return new HttpResponse(rs, HttpURLConnection.HTTP_OK);
 	}
+	
+	
+	@POST
+	@Path("/addressbook")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "addToAddressBook",
+	notes = "Add yourself to the address book")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Added"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse addToAddressBook() {
+		try{
+			Agent owner = getContext().getLocalNode().getAnonymous();
+			Envelope env = load(address_prefix,owner);
+			ContactContainer cc = env.getContent(ContactContainer.class);
+			boolean added = cc.addContact(owner.getId());
+			env.updateContent(cc);
+			store(env,owner);
+			if(added)
+				return new HttpResponse("Added to addressbook", HttpURLConnection.HTTP_OK);
+			else
+				return new HttpResponse("Already in list", HttpURLConnection.HTTP_BAD_REQUEST);
+		} catch (Exception e) {
+			// write error to logfile and console
+			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
+			// create and publish a monitoring message
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+		}
+		return new HttpResponse("Unknown Error", HttpURLConnection.HTTP_BAD_REQUEST);
+	}
+	
+	@POST
+	@Path("/addressbook/remove")
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "removeFromAddressBook",
+	notes = "Add yourself to the address book")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Added"),
+			@ApiResponse(code = HttpURLConnection.HTTP_UNAUTHORIZED, message = "Unauthorized")
+	})
+	public HttpResponse removeFromAddressBook() {
+		try{
+			Agent owner = getContext().getLocalNode().getAnonymous();
+			Envelope env = load(contact_prefix,owner);
+			ContactContainer cc = env.getContent(ContactContainer.class);
+			long userID = owner.getId();
+			boolean deleted = cc.removeContact(userID);
+			env.updateContent(cc);
+			store(env,owner);
+			if(deleted)
+				return new HttpResponse("Removed from list.", HttpURLConnection.HTTP_OK);
+			else
+				return new HttpResponse("You were not in the list.", HttpURLConnection.HTTP_BAD_REQUEST);
+		} catch (Exception e) {
+			// write error to logfile and console
+			logger.log(Level.SEVERE, "Can't persist to network storage!", e);
+			// create and publish a monitoring message
+			L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+		}
+		return new HttpResponse("Could not be removed from the list.", HttpURLConnection.HTTP_BAD_REQUEST);
+	}
+	
 	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// RMI Calls 
@@ -740,30 +814,30 @@ public class ContactService extends Service {
 	}
 
 
-	private Envelope load(String prefix) throws L2pSecurityException, StorageException, EnvelopeException,
+	private Envelope load(String prefix, Agent owner) throws L2pSecurityException, StorageException, EnvelopeException,
 	UnsupportedEncodingException, SerializationException {
-		String identifier = prefix+getContext().getMainAgent().getId();
+		String identifier = prefix+owner.getId();
 		try {
 			Envelope env = getContext().getStoredObject(ContactContainer.class, identifier);
 			try {
-				env.open(getContext().getMainAgent());
+				env.open(owner);
 			} catch (L2pSecurityException e) {
 				env.open(getContext().getLocalNode().getAnonymous());
 			}
 			return env;
 
 		} catch (ArtifactNotFoundException e) {
-			Envelope env = Envelope.createClassIdEnvelope(new ContactContainer(), identifier, getContext().getMainAgent());
-			env.open(getContext().getMainAgent());
+			Envelope env = Envelope.createClassIdEnvelope(new ContactContainer(), identifier, owner);
+			env.open(owner);
 			return env;
 		}
 	}
 
-	private void store(Envelope env) throws L2pSecurityException, UnsupportedEncodingException,
+	private void store(Envelope env, Agent owner) throws L2pSecurityException, UnsupportedEncodingException,
 	EncodingFailedException, SerializationException, StorageException, DecodingFailedException {
 		if (getContext().getMainAgent().equals(getContext().getLocalNode().getAnonymous()))
 			throw new L2pSecurityException("Data cannot be stored for anonymous!");
-		env.addSignature(getContext().getMainAgent());
+		env.addSignature(owner);
 		env.store();
 		env.close();
 	}
