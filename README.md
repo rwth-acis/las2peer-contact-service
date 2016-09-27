@@ -1,6 +1,6 @@
 ![las2peer](https://github.com/rwth-acis/LAS2peer/blob/master/img/logo/bitmap/las2peer-logo-128x128.png)
 
-las2peer-Contact-Service
+las2peer-Contact-Service [![Build Status](https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Contact-Service)
 =======================
 
 This service can manage your contacts and groups. 
