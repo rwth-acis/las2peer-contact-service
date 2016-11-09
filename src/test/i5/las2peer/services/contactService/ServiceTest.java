@@ -136,7 +136,7 @@ public class ServiceTest {
 			// Add a contact that does not exist
 			ClientResponse result3 = c.sendRequest("GET", mainPath + "contact/eve2nd", "");
 			assertEquals(404, result3.getHttpCode());
-			assertTrue(result3.getResponse().trim().contains("Agent does not exist"));
+			assertTrue(result3.getResponse().trim().contains("Agent does not exist."));
 			System.out.println("Result of 'testAddRemoveContact': " + result3.getResponse().trim());
 
 			// Remove Contact
@@ -147,13 +147,13 @@ public class ServiceTest {
 
 			// Try to remove contact again
 			ClientResponse result5 = c.sendRequest("POST", mainPath + "contact/eve1st", "");
-			assertEquals(400, result5.getHttpCode());
+			assertEquals(404, result5.getHttpCode());
 			assertTrue(result5.getResponse().trim().contains("User is not one of your contacts."));
 			System.out.println("Result of 'testAddRemoveContact': " + result5.getResponse().trim());
 
 			// Remove user that does not exist
 			ClientResponse result6 = c.sendRequest("POST", mainPath + "contact/eve2nd", "");
-			assertEquals(400, result6.getHttpCode());
+			assertEquals(404, result6.getHttpCode());
 			assertTrue(result6.getResponse().trim().contains("Agent does not exist"));
 			System.out.println("Result of 'testAddRemoveContact': " + result6.getResponse().trim());
 		} catch (Exception e) {
