@@ -120,7 +120,7 @@ public class ContactService extends RESTService {
 						user = (UserAgent) Context.getCurrent().getAgent(l);
 						result.put("" + user.getId(), user.getLoginName());
 					} catch (AgentNotKnownException e1) {
-						// TODO Auto-generated catch block
+						// Skip unknown agents.
 						e1.printStackTrace();
 					}
 				}
@@ -133,7 +133,7 @@ public class ContactService extends RESTService {
 						user = (UserAgent) Context.getCurrent().getAgent(l);
 						result.put("" + user.getId(), user.getLoginName());
 					} catch (AgentNotKnownException e1) {
-						// TODO Auto-generated catch block
+						// Skip unknown agents.
 						e1.printStackTrace();
 					}
 				}
@@ -307,8 +307,10 @@ public class ContactService extends RESTService {
 						if (group.isMember(member)) {
 							result.put("" + groupId, s);
 						}
+					} catch (AgentNotKnownException e1) {
+						return Response.status(Status.NOT_FOUND).entity("Agent not found.").build();
 					} catch (Exception e) {
-						// Group does not exist or user has no permission
+						return Response.status(Status.UNAUTHORIZED).entity("Permission denied.").build();
 					}
 				}
 				return Response.status(Status.OK).entity(result).build();
@@ -521,7 +523,6 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_UNAUTHORIZED,
 								message = "Unauthorized") })
 		public Response getGroupMember(@PathParam("name") String name) {
-			System.out.println("test324");
 			JSONObject result = new JSONObject();
 			String identifier = group_prefix + name;
 			try {
@@ -689,14 +690,14 @@ public class ContactService extends RESTService {
 				try {
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Identifier problems.").build();
 				} catch (SerializationException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Serialization problems.").build();
 				} catch (CryptoException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -708,8 +709,8 @@ public class ContactService extends RESTService {
 			try {
 				Context.getCurrent().storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 			} catch (StorageException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+				return Response.status(Status.BAD_REQUEST).entity("Storage problems.").build();
 			}
 			if (added)
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
@@ -746,14 +747,14 @@ public class ContactService extends RESTService {
 				try {
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Identifier problems.").build();
 				} catch (SerializationException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Serialization problems.").build();
 				} catch (CryptoException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -766,8 +767,8 @@ public class ContactService extends RESTService {
 				try {
 					Context.getCurrent().storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				} catch (StorageException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Storage problems.").build();
 				}
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
@@ -801,7 +802,7 @@ public class ContactService extends RESTService {
 						user = (UserAgent) Context.getCurrent().getAgent(l);
 						result.put("" + user.getId(), user.getLoginName());
 					} catch (AgentNotKnownException e1) {
-						// TODO Auto-generated catch block
+						// Skip unknown agents
 						e1.printStackTrace();
 					}
 				}
@@ -814,14 +815,14 @@ public class ContactService extends RESTService {
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
 					storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Identifier problems.").build();
 				} catch (SerializationException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Serialization problems.").build();
 				} catch (CryptoException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
