@@ -147,7 +147,7 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Adds a contact to your list.
+		 * Adds a contact to your list. Information is stored in an envelope which holds all your contacts.
 		 * 
 		 * @param name Login name of the contact you want to add
 		 * @return Returns a Response
@@ -217,10 +217,10 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Removes a contact from your list
+		 * Removes a contact from your list.
 		 * 
 		 * @param name Login name of the contact you want to delete
-		 * @return Returns a Response
+		 * @return Returns a Response whether the contact was deleted or not.
 		 */
 		@DELETE
 		@Path("{name}")
@@ -273,7 +273,7 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Retrieve a list of all your groups
+		 * Retrieve a list of all your groups.
 		 * 
 		 * @return Returns a Response containing a list of your groups
 		 */
@@ -322,7 +322,7 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Get a group
+		 * Get group information via name.
 		 * 
 		 * @param name Name of your group
 		 * @return Returns a Response
@@ -362,7 +362,8 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Adds a group
+		 * Adds a group. Creates a group agent and stores the name in an enevelope. The evnelope makes it possible to
+		 * request the Agent again and an extra envelope encrypted with the service accessible for all users.
 		 * 
 		 * @param name Name of your group
 		 * @return Returns a Response whether the group could be added or not.
@@ -458,7 +459,7 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Removes a group
+		 * Removes a group.
 		 * 
 		 * @param name Name of the group you want to delete.
 		 * @return Returns a Response whether the group could be deleted or not.
@@ -501,13 +502,13 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Retrieve all members of a group
+		 * Retrieve all members of a group.
 		 * 
 		 * @param name Name of the group.
 		 * @return Returns a Response with the list of all members.
 		 */
 		@GET
-		@Path("/group/{name}/member/")
+		@Path("/groups/{name}/member")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
 				value = "getGroupMember",
@@ -520,6 +521,7 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_UNAUTHORIZED,
 								message = "Unauthorized") })
 		public Response getGroupMember(@PathParam("name") String name) {
+			System.out.println("test324");
 			JSONObject result = new JSONObject();
 			String identifier = group_prefix + name;
 			try {
@@ -543,7 +545,7 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Adds a member to a group
+		 * Adds a member to a group.
 		 * 
 		 * @param groupName Name of the group.
 		 * @param userName Name of the user.
@@ -576,6 +578,8 @@ public class ContactService extends RESTService {
 				addID = Context.getCurrent().getLocalNode().getAgentIdForLogin(userName);
 				groupAgent.addMember(Context.getCurrent().getAgent(addID));
 				env = Context.getCurrent().createEnvelope(stored, cc);
+			} catch (AgentNotKnownException e1) {
+				return Response.status(Status.NOT_FOUND).entity("Agent not found.").build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't add member!", e);

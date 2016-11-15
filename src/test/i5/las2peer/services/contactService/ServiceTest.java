@@ -224,6 +224,60 @@ public class ServiceTest {
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
 
+			// Check groups
+			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(200, result2.getHttpCode());
+			assertTrue(result2.getResponse().contains("testGroup"));
+			System.out.println("Result of 'testGroups': " + result2.getResponse().trim());
+
+			// Check group member
+			ClientResponse result3 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "", "text/plain",
+					"application/json", new HashMap<String, String>());
+			assertEquals(200, result3.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result3.getResponse().trim());
+
+			// try another agent
+			c.setLogin(Long.toString(agentAbel.getId()), passAbel);
+
+			ClientResponse result4 = c.sendRequest("GET", mainPath + "groups", "");
+			assertEquals(200, result4.getHttpCode());
+			assertTrue(result4.getResponse().contains("{}"));
+			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
+
+			// add agent with first agent
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+
+			ClientResponse result5 = c.sendRequest("POST", mainPath + "groups/testGroup/member/abel", "");
+			assertEquals(200, result5.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result5.getResponse().trim());
+
+			// add agent who does not exist
+			ClientResponse result6 = c.sendRequest("POST", mainPath + "groups/testGroup/member/abel1337", "");
+			assertEquals(404, result6.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result6.getResponse().trim());
+
+			// Check group member
+			ClientResponse result7 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "");
+			assertEquals(200, result7.getHttpCode());
+			assertTrue(result7.getResponse().contains("abel"));
+			System.out.println("Result of 'testGroups': " + result7.getResponse().trim());
+
+			// now check with other agent again
+
+			c.setLogin(Long.toString(agentAbel.getId()), passAbel);
+
+			ClientResponse result8 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "");
+			assertEquals(200, result8.getHttpCode());
+			assertTrue(result8.getResponse().contains("abel"));
+			assertTrue(result8.getResponse().contains("adam"));
+			System.out.println("Result of 'testGroups': " + result8.getResponse().trim());
+
+			ClientResponse result9 = c.sendRequest("GET", mainPath + "groups", "");
+			assertEquals(200, result9.getHttpCode());
+			assertTrue(result9.getResponse().contains("testGroup"));
+			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
