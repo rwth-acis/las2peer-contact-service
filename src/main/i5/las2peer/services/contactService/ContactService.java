@@ -307,10 +307,8 @@ public class ContactService extends RESTService {
 						if (group.isMember(member)) {
 							result.put("" + groupId, s);
 						}
-					} catch (AgentNotKnownException e1) {
-						return Response.status(Status.NOT_FOUND).entity("Agent not found.").build();
 					} catch (Exception e) {
-						return Response.status(Status.UNAUTHORIZED).entity("Permission denied.").build();
+						// Skip agents who are not known or groups wihtout access.
 					}
 				}
 				return Response.status(Status.OK).entity(result).build();
