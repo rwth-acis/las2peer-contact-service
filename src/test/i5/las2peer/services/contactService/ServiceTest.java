@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,7 +41,7 @@ public class ServiceTest {
 	private static final String passEve = "evespass";
 	private static final String passAbel = "abelspass";
 
-	private static final String mainPath = "contacts/";
+	private static final String mainPath = "contactservice/";
 
 	/**
 	 * Called before the tests start.
@@ -122,37 +123,37 @@ public class ServiceTest {
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
 
 			// Add a contact
-			ClientResponse result = c.sendRequest("GET", mainPath + "contact/eve1st", "");
+			ClientResponse result = c.sendRequest("POST", mainPath + "eve1st", "");
 			assertEquals(200, result.getHttpCode());
 			assertTrue(result.getResponse().trim().contains("Contact added"));
 			System.out.println("Result of 'testAddRemoveContact': " + result.getResponse().trim());
 
 			// Add the same contact again
-			ClientResponse result2 = c.sendRequest("GET", mainPath + "contact/eve1st", "");
+			ClientResponse result2 = c.sendRequest("POST", mainPath + "eve1st", "");
 			assertEquals(400, result2.getHttpCode());
 			assertTrue(result2.getResponse().trim().contains("Contact already in list"));
 			System.out.println("Result of 'testAddRemoveContact': " + result2.getResponse().trim());
 
 			// Add a contact that does not exist
-			ClientResponse result3 = c.sendRequest("GET", mainPath + "contact/eve2nd", "");
+			ClientResponse result3 = c.sendRequest("POST", mainPath + "eve2nd", "");
 			assertEquals(404, result3.getHttpCode());
 			assertTrue(result3.getResponse().trim().contains("Agent does not exist."));
 			System.out.println("Result of 'testAddRemoveContact': " + result3.getResponse().trim());
 
 			// Remove Contact
-			ClientResponse result4 = c.sendRequest("POST", mainPath + "contact/eve1st", "");
+			ClientResponse result4 = c.sendRequest("DELETE", mainPath + "eve1st", "");
 			assertEquals(200, result4.getHttpCode());
 			assertTrue(result4.getResponse().trim().contains("Contact removed"));
 			System.out.println("Result of 'testAddRemoveContact': " + result4.getResponse().trim());
 
 			// Try to remove contact again
-			ClientResponse result5 = c.sendRequest("POST", mainPath + "contact/eve1st", "");
+			ClientResponse result5 = c.sendRequest("DELETE", mainPath + "eve1st", "");
 			assertEquals(404, result5.getHttpCode());
 			assertTrue(result5.getResponse().trim().contains("User is not one of your contacts."));
 			System.out.println("Result of 'testAddRemoveContact': " + result5.getResponse().trim());
 
 			// Remove user that does not exist
-			ClientResponse result6 = c.sendRequest("POST", mainPath + "contact/eve2nd", "");
+			ClientResponse result6 = c.sendRequest("DELETE", mainPath + "eve2nd", "");
 			assertEquals(404, result6.getHttpCode());
 			assertTrue(result6.getResponse().trim().contains("Agent does not exist"));
 			System.out.println("Result of 'testAddRemoveContact': " + result6.getResponse().trim());
@@ -170,35 +171,39 @@ public class ServiceTest {
 		try {
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
 
-			// Add a contact
-			ClientResponse result = c.sendRequest("GET", mainPath + "contacts", "");
+			// get Contacts with no contacts
+			ClientResponse result = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
 			assertEquals(200, result.getHttpCode());
-			assertTrue(result.getResponse().trim().contains("{\"users\":[]}"));
+			assertTrue(result.getResponse().trim().contains("{}"));
 			System.out.println("Result of 'testGetContacts': " + result.getResponse().trim());
 
 			// with one contact
-			c.sendRequest("GET", mainPath + "contact/eve1st", "");
-			ClientResponse result2 = c.sendRequest("GET", mainPath + "contacts", "");
+			c.sendRequest("POST", mainPath + "eve1st", "");
+			ClientResponse result2 = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
 			assertEquals(200, result2.getHttpCode());
-			assertTrue(result2.getResponse().trim().contains("{\"users\":[\"eve1st\"]}"));
+			assertTrue(result2.getResponse().trim().contains("eve1st"));
 			System.out.println("Result of 'testGetContacts': " + result2.getResponse().trim());
 
 			// with more than one contact
-			c.sendRequest("GET", mainPath + "contact/abel", "");
-			ClientResponse result3 = c.sendRequest("GET", mainPath + "contacts", "");
+			c.sendRequest("POST", mainPath + "abel", "");
+			ClientResponse result3 = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
 			assertEquals(200, result3.getHttpCode());
 			assertTrue(result3.getResponse().trim().contains("eve1st"));
 			assertTrue(result3.getResponse().trim().contains("abel"));
 			System.out.println("Result of 'testGetContacts': " + result3.getResponse().trim());
 
 			// Remove Contacts
-			c.sendRequest("POST", mainPath + "contact/eve1st", "");
-			c.sendRequest("POST", mainPath + "contact/abel", "");
+			c.sendRequest("DELETE", mainPath + "eve1st", "");
+			c.sendRequest("DELETE", mainPath + "abel", "");
 
 			// Check if list is empty again
-			ClientResponse result4 = c.sendRequest("GET", mainPath + "contacts", "");
+			ClientResponse result4 = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
 			assertEquals(200, result4.getHttpCode());
-			assertTrue(result4.getResponse().trim().contains("{\"users\":[]}"));
+			assertTrue(result4.getResponse().trim().contains("{}"));
 			System.out.println("Result of 'testGetContacts': " + result4.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -215,7 +220,7 @@ public class ServiceTest {
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
 
 			// Add a contact
-			ClientResponse result = c.sendRequest("POST", mainPath + "group", "{\"name\":\"testGroup\"}");
+			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
 
@@ -234,12 +239,12 @@ public class ServiceTest {
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
 
 			// Add a contact
-			ClientResponse result = c.sendRequest("POST", mainPath + "addressbook/add", "");
+			ClientResponse result = c.sendRequest("POST", mainPath + "addressbook", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result.getResponse().trim());
 
 			c.setLogin(Long.toString(agentEve.getId()), passEve);
-			ClientResponse result2 = c.sendRequest("POST", mainPath + "addressbook/add", "");
+			ClientResponse result2 = c.sendRequest("POST", mainPath + "addressbook", "");
 			assertEquals(200, result2.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result2.getResponse().trim());
 
@@ -251,7 +256,7 @@ public class ServiceTest {
 			System.out.println("Result of 'testAddressBook': " + result3.getResponse().trim());
 
 			// Remove contact
-			ClientResponse result4 = c.sendRequest("POST", mainPath + "addressbook/remove", "");
+			ClientResponse result4 = c.sendRequest("DELETE", mainPath + "addressbook", "");
 			assertEquals(200, result4.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result4.getResponse().trim());
 
