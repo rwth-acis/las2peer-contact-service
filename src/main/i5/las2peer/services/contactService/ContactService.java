@@ -312,6 +312,17 @@ public class ContactService extends RESTService {
 					}
 				}
 				return Response.status(Status.OK).entity(result).build();
+			} catch (ArtifactNotFoundException e) {
+				ContactContainer cc = new ContactContainer();
+				Envelope env = null;
+				try {
+					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
+				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
+					logger.log(Level.SEVERE, "Unknown error!", e);
+					e1.printStackTrace();
+				}
+				storeEnvelope(env, Context.getCurrent().getServiceAgent());
+				return Response.status(Status.OK).entity(result).build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -804,8 +815,7 @@ public class ContactService extends RESTService {
 						e1.printStackTrace();
 					}
 				}
-				String returnString = "" + result;// +Context.getCurrent().getMainAgent().getId();
-				return Response.status(Status.OK).entity(returnString).build();
+				return Response.status(Status.OK).entity(result).build();
 			} catch (ArtifactNotFoundException ex) {
 				Envelope env = null;
 				ContactContainer cc = new ContactContainer();
@@ -822,6 +832,7 @@ public class ContactService extends RESTService {
 					e.printStackTrace();
 					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
 				}
+				return Response.status(Status.OK).entity(result).build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
