@@ -120,21 +120,16 @@ public class ContactService extends RESTService {
 						result.put("" + user.getId(), user.getLoginName());
 					} catch (AgentNotKnownException e1) {
 						// Skip unknown agents.
-						e1.printStackTrace();
 					}
 				}
 			} catch (ArtifactNotFoundException e) {
 				ContactContainer cc = new ContactContainer();
-				HashSet<Long> userList = cc.getUserList();
-				for (Long l : userList) {
-					UserAgent user;
-					try {
-						user = (UserAgent) Context.getCurrent().getAgent(l);
-						result.put("" + user.getId(), user.getLoginName());
-					} catch (AgentNotKnownException e1) {
-						// Skip unknown agents.
-						e1.printStackTrace();
-					}
+				try{
+					Envelope env = Context.getCurrent().createEnvelope(identifier, cc);
+					storeEnvelope(env);
+				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {	
+					logger.log(Level.SEVERE, "Unknown error!", e);
+					e1.printStackTrace();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -398,31 +393,28 @@ public class ContactService extends RESTService {
 			members[0] = Context.getCurrent().getMainAgent();
 			Envelope env = null;
 			Envelope env2 = null;
-			boolean added = false;
 			long id = -1;
 			String identifier = group_prefix + name;
 			String identifier2 = group_prefix;
 			GroupAgent groupAgent;
-			// try to create group
+			
 			try {
-				groupAgent = GroupAgent.createGroupAgent(members);
-			} catch (L2pSecurityException | CryptoException | SerializationException e2) {
-				return Response.status(Status.BAD_REQUEST).entity("Error").build();
-			}
-			id = groupAgent.getId();
-			try {
-				groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
-				Context.getCurrent().getLocalNode().storeAgent(groupAgent);
-
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				cc.addGroup(name, id);
-				env = Context.getCurrent().createEnvelope(stored, cc);
+				Context.getCurrent().fetchEnvelope(identifier);
 			} catch (ArtifactNotFoundException e) {
 				ContactContainer cc = new ContactContainer();
+				// try to create group
+				try {
+					groupAgent = GroupAgent.createGroupAgent(members);
+					id = groupAgent.getId();
+					groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
+					Context.getCurrent().getLocalNode().storeAgent(groupAgent);
+				} catch (L2pSecurityException | CryptoException | SerializationException | AgentException e2) {
+					return Response.status(Status.BAD_REQUEST).entity("Error").build();
+				}
 				cc.addGroup(name, id);
 				try {
 					env = Context.getCurrent().createEnvelope(identifier, cc, groupAgent);
+					storeEnvelope(env, groupAgent);
 				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
 					logger.log(Level.SEVERE, "Unknown error!", e);
 					e1.printStackTrace();
@@ -437,17 +429,14 @@ public class ContactService extends RESTService {
 			}
 			// writing to user
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier2);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				cc.addGroup(name, id);
-				added = true;
-				env2 = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
+				Context.getCurrent().fetchEnvelope(identifier2);
 			} catch (ArtifactNotFoundException e) {
 				ContactContainer cc = new ContactContainer();
 				cc.addGroup(name, id);
-				added = true;
 				try {
 					env2 = Context.getCurrent().createUnencryptedEnvelope(identifier2, cc);
+					storeEnvelope(env2, Context.getCurrent().getServiceAgent());
+					return Response.status(Status.OK).entity("" + id).build();
 				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
 					logger.log(Level.SEVERE, "Unknown error!", e);
 					e1.printStackTrace();
@@ -460,12 +449,7 @@ public class ContactService extends RESTService {
 				e.printStackTrace();
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			storeEnvelope(env, groupAgent);
-			storeEnvelope(env2, Context.getCurrent().getServiceAgent());
-			if (added)
-				return Response.status(Status.OK).entity("" + id).build();
-			else
-				return Response.status(Status.BAD_REQUEST).entity("Error").build();
+			return Response.status(Status.BAD_REQUEST).entity("Error").build(); 
 		}
 
 		/**
@@ -780,7 +764,7 @@ public class ContactService extends RESTService {
 				}
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
-				return Response.status(Status.OK).entity("You were not in the list.").build();
+				return Response.status(Status.NOT_FOUND).entity("You were not in the list.").build();
 			}
 		}
 

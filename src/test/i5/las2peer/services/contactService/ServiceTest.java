@@ -125,9 +125,21 @@ public class ServiceTest {
 
 		try {
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			
+			// Test get contact name
+			
+			ClientResponse result = c.sendRequest("GET", mainPath + "name/"+Long.toString(agentAdam.getId()), "");
+			assertEquals(200, result.getHttpCode());
+			assertTrue(result.getResponse().trim().contains("adam"));
+			System.out.println("Result of 'testAddRemoveContact': " + result.getResponse().trim());
+			
+			result = c.sendRequest("GET", mainPath + "name/1337", "");
+			assertEquals(404, result.getHttpCode());
+			System.out.println("Result of 'testAddRemoveContact': " + result.getResponse().trim());
+			
 
 			// Add a contact
-			ClientResponse result = c.sendRequest("POST", mainPath + "eve1st", "");
+			result = c.sendRequest("POST", mainPath + "eve1st", "");
 			assertEquals(200, result.getHttpCode());
 			assertTrue(result.getResponse().trim().contains("Contact added"));
 			System.out.println("Result of 'testAddRemoveContact': " + result.getResponse().trim());
@@ -282,11 +294,19 @@ public class ServiceTest {
 			assertTrue(result9.getResponse().contains("testGroup"));
 			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
 			
+			result9 = c.sendRequest("GET", mainPath + "groups/testGroup", "");
+			assertEquals(200, result9.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
+			
 			ClientResponse result10 = c.sendRequest("DELETE", mainPath + "groups/testGroup/member/adam", "");
 			assertEquals(200, result10.getHttpCode());
 			
 			ClientResponse result11 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
 			assertEquals(200, result11.getHttpCode());
+			
+			result9 = c.sendRequest("GET", mainPath + "groups/testGroup", "");
+			assertEquals(400, result9.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -311,6 +331,10 @@ public class ServiceTest {
 			ClientResponse result2 = c.sendRequest("POST", mainPath + "addressbook", "");
 			assertEquals(200, result2.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result2.getResponse().trim());
+			
+			result2 = c.sendRequest("POST", mainPath + "addressbook", "");
+			assertEquals(400, result2.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result2.getResponse().trim());
 
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
 
@@ -322,6 +346,10 @@ public class ServiceTest {
 			// Remove contact
 			ClientResponse result4 = c.sendRequest("DELETE", mainPath + "addressbook", "");
 			assertEquals(200, result4.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result4.getResponse().trim());
+			
+			result4 = c.sendRequest("DELETE", mainPath + "addressbook", "");
+			assertEquals(404, result4.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result4.getResponse().trim());
 
 			c.setLogin(Long.toString(agentEve.getId()), passEve);
