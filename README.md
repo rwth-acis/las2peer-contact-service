@@ -1,6 +1,6 @@
-![las2peer](https://github.com/rwth-acis/LAS2peer/blob/master/img/logo/bitmap/las2peer-logo-128x128.png)
-
-las2peer-Contact-Service [![Build Status](https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Contact-Service)
+#![las2peer](https://rwth-acis.github.io/las2peer/logo/vector/las2peer-logo.svg)
+[![Build Status](https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Contact-Service) [![codecov](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service/branch/master/graph/badge.svg)](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service)
+las2peer-Contact-Service 
 =======================
 
 This service can manage your contacts and groups. 
@@ -8,7 +8,7 @@ This service can manage your contacts and groups.
 Features
 --------
 
-* add, delete contacts
-* add, delete groups
-* add member to groups
-* edit your user information (name, userpicture)
+* Add, delete contacts
+* Add, delete groups
+* Add member to groups
+* Edit your user information (name, userpicture)
