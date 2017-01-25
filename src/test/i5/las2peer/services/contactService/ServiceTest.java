@@ -243,6 +243,10 @@ public class ServiceTest {
 			result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(400, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
+			
+			result = c.sendRequest("POST", mainPath + "groups/anotherGroup", "");
+			assertEquals(200, result.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
 
 			// Check groups
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
@@ -386,10 +390,39 @@ public class ServiceTest {
 			System.out.println("Result of 'testAddRemoveContact': " + result2.getResponse().trim());
 			
 			// Check groups
-			ClientResponse result4 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
-					new HashMap<String, String>());
-			assertEquals(200, result4.getHttpCode());
+			ClientResponse result4 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
+			assertEquals(400, result4.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+	
+	@Test
+	public void testWithoutStorage() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			
+			// Check groups
+			ClientResponse result = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(200, result.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
+			
+			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "");
+			assertEquals(400, result2.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result2.getResponse().trim());
+			
+			// Get contacts
+			ClientResponse result3 = c.sendRequest("GET", mainPath + "addressbook", "");
+			assertEquals(200, result3.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result3.getResponse().trim());
 			
 			
 		} catch (Exception e) {
