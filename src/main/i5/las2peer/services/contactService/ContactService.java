@@ -249,7 +249,6 @@ public class ContactService extends RESTService {
 					logger.log(Level.SEVERE, "Unknown error!", e);
 					e1.printStackTrace();
 				}
-				deleted = true;
 			} catch (AgentNotKnownException ex) {
 				return Response.status(Status.NOT_FOUND).entity("Agent does not exist").build();
 			} catch (Exception e) {
@@ -400,6 +399,7 @@ public class ContactService extends RESTService {
 			
 			try {
 				Context.getCurrent().fetchEnvelope(identifier);
+				return Response.status(Status.BAD_REQUEST).entity("Group already exist").build(); 
 			} catch (ArtifactNotFoundException e) {
 				ContactContainer cc = new ContactContainer();
 				// try to create group
@@ -429,17 +429,21 @@ public class ContactService extends RESTService {
 			}
 			// writing to user
 			try {
-				Context.getCurrent().fetchEnvelope(identifier2);
+				// try to add group to group list
+				Envelope stored = Context.getCurrent().fetchEnvelope(identifier2);
+				ContactContainer cc = (ContactContainer) stored.getContent();
+				cc.addGroup(name, id);
+				env2 = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
 			} catch (ArtifactNotFoundException e) {
+				// create new group list
 				ContactContainer cc = new ContactContainer();
 				cc.addGroup(name, id);
 				try {
 					env2 = Context.getCurrent().createUnencryptedEnvelope(identifier2, cc);
-					storeEnvelope(env2, Context.getCurrent().getServiceAgent());
-					return Response.status(Status.OK).entity("" + id).build();
 				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
 					logger.log(Level.SEVERE, "Unknown error!", e);
 					e1.printStackTrace();
+					return Response.status(Status.BAD_REQUEST).entity("Error").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -449,7 +453,8 @@ public class ContactService extends RESTService {
 				e.printStackTrace();
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			return Response.status(Status.BAD_REQUEST).entity("Error").build(); 
+			storeEnvelope(env2, Context.getCurrent().getServiceAgent());
+			return Response.status(Status.OK).entity("" + id).build(); 
 		}
 
 		/**
@@ -732,8 +737,7 @@ public class ContactService extends RESTService {
 				ContactContainer cc = (ContactContainer) stored.getContent();
 				long userID = Context.getCurrent().getMainAgent().getId();
 				deleted = cc.removeContact(userID);
-				if (deleted)
-					env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
+				env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
 			} catch (ArtifactNotFoundException ex) {
 				ContactContainer cc = new ContactContainer();
 				try {
@@ -756,14 +760,10 @@ public class ContactService extends RESTService {
 				return Response.status(Status.OK).entity("Could not be removed from list.").build();
 			}
 			if (deleted) {
-				try {
-					Context.getCurrent().storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
-				} catch (StorageException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Storage problems.").build();
-				}
+				storeEnvelope(env,Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
+				storeEnvelope(env,Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.NOT_FOUND).entity("You were not in the list.").build();
 			}
 		}
@@ -1037,10 +1037,7 @@ public class ContactService extends RESTService {
 			} catch (AgentNotKnownException e) {
 				String error = "Agent not found";
 				return Response.status(Status.NOT_FOUND).entity(error).build();
-			} catch (Exception e) {
-				String error = "Internal error";
-				return Response.status(Status.INTERNAL_SERVER_ERROR).entity(error).build();
-			}
+			} 
 		}
 
 		/**

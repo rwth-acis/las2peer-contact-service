@@ -239,6 +239,10 @@ public class ServiceTest {
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
+			
+			result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
+			assertEquals(400, result.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
 
 			// Check groups
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
@@ -362,5 +366,36 @@ public class ServiceTest {
 			fail("Exception: " + e);
 		}
 	}
+	
+	@Test
+	public void testRemoveWithoutStorage() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
+		try {
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			
+			// Remove contact from addressbook
+			ClientResponse result1 = c.sendRequest("DELETE", mainPath + "addressbook", "");
+			assertEquals(404, result1.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result1.getResponse().trim());
+			
+			// Remove Contact
+			ClientResponse result2 = c.sendRequest("DELETE", mainPath + "eve1st", "");
+			assertEquals(404, result2.getHttpCode());
+			System.out.println("Result of 'testAddRemoveContact': " + result2.getResponse().trim());
+			
+			// Check groups
+			ClientResponse result4 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(200, result4.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+	
 }
