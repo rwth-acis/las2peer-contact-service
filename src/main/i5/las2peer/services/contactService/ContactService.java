@@ -94,7 +94,6 @@ public class ContactService extends RESTService {
 	public static class Resource {
 		// put here all your service methods
 		@GET
-		@Path("/")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
 				value = "getContacts",
@@ -983,6 +982,12 @@ public class ContactService extends RESTService {
 			return Response.status(Status.OK).entity(returnString).build();
 		}
 
+		/**
+		 * Updates the user information (firstName, lastName, userImage)
+		 * 
+		 * @param content JSON string containing the firstName, lastName and the userImage.
+		 * @return Response
+		 */
 		@POST
 		@Path("/permission")
 		@Produces(MediaType.APPLICATION_JSON)
@@ -1054,7 +1059,11 @@ public class ContactService extends RESTService {
 			}
 		}
 
-		// envelope methods
+		/**
+		 * Envelope helper method for storing an envelope.
+		 * 
+		 * @param env Envelope.
+		 */
 		private void storeEnvelope(Envelope env) {
 			try {
 				Context.getCurrent().storeEnvelope(env);
@@ -1064,7 +1073,12 @@ public class ContactService extends RESTService {
 			}
 		}
 
-		// envelope methods
+		/**
+		 * Envelope helper method for storing an envelope.
+		 * 
+		 * @param env Envelope.
+		 * @param owner Agent who owns the envelope.
+		 */
 		private void storeEnvelope(Envelope env, Agent owner) {
 			try {
 				Context.getCurrent().storeEnvelope(env, owner);

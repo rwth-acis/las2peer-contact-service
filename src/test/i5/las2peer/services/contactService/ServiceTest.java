@@ -6,13 +6,15 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import i5.las2peer.p2p.LocalNode;
+import i5.las2peer.p2p.PastryNodeImpl;
+import i5.las2peer.persistency.SharedStorage.STORAGE_MODE;
 import i5.las2peer.p2p.ServiceNameVersion;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.security.UserAgent;
@@ -20,6 +22,7 @@ import i5.las2peer.testing.MockAgentFactory;
 import i5.las2peer.webConnector.WebConnector;
 import i5.las2peer.webConnector.client.ClientResponse;
 import i5.las2peer.webConnector.client.MiniClient;
+import i5.las2peer.testing.TestSuite;
 
 /**
  * Example Test Class demonstrating a basic JUnit test structure.
@@ -29,8 +32,9 @@ public class ServiceTest {
 
 	private static final String HTTP_ADDRESS = "http://127.0.0.1";
 	private static final int HTTP_PORT = WebConnector.DEFAULT_HTTP_PORT;
-
-	private static LocalNode node;
+	
+	private static ArrayList<PastryNodeImpl> nodes;
+	private static PastryNodeImpl node;
 	private static WebConnector connector;
 	private static ByteArrayOutputStream logStream;
 
@@ -50,11 +54,13 @@ public class ServiceTest {
 	 * 
 	 * @throws Exception
 	 */
-	@BeforeClass
-	public static void startServer() throws Exception {
+	@Before
+	public void startServer() throws Exception {
 
 		// start node
-		node = LocalNode.newNode();
+		nodes = TestSuite.launchNetwork(1, STORAGE_MODE.FILESYSTEM, true);
+		node = nodes.get(0);
+		node.launch();
 		agentAdam = MockAgentFactory.getAdam();
 		agentAdam.unlockPrivateKey(passAdam);
 		agentEve = MockAgentFactory.getEve();
@@ -64,7 +70,6 @@ public class ServiceTest {
 		node.storeAgent(agentAdam);
 		node.storeAgent(agentEve);
 		node.storeAgent(agentAbel);
-		node.launch();
 
 		// during testing, the specified service version does not matter
 		ServiceAgent testService = ServiceAgent.createServiceAgent(
@@ -90,16 +95,15 @@ public class ServiceTest {
 	 * 
 	 * @throws Exception
 	 */
-	@AfterClass
-	public static void shutDownServer() throws Exception {
+	@After
+	public void shutDownServer() throws Exception {
 
 		connector.stop();
 		node.shutDown();
 
 		connector = null;
-		node = null;
 
-		LocalNode.reset();
+		node = null;
 
 		System.out.println("Connector-Log:");
 		System.out.println("--------------");
@@ -277,6 +281,12 @@ public class ServiceTest {
 			assertEquals(200, result9.getHttpCode());
 			assertTrue(result9.getResponse().contains("testGroup"));
 			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
+			
+			ClientResponse result10 = c.sendRequest("DELETE", mainPath + "groups/testGroup/member/adam", "");
+			assertEquals(200, result10.getHttpCode());
+			
+			ClientResponse result11 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
+			assertEquals(200, result11.getHttpCode());
 
 		} catch (Exception e) {
 			e.printStackTrace();
