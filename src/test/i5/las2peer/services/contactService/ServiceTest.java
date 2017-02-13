@@ -46,6 +46,8 @@ public class ServiceTest {
 	private static final String passAbel = "abelspass";
 
 	private static final String mainPath = "contactservice/";
+	
+	private static ServiceAgent testService2;
 
 	/**
 	 * Called before the tests start.
@@ -75,7 +77,7 @@ public class ServiceTest {
 				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@1.0"), "a pass");
 		testService.unlockPrivateKey("a pass");
 		
-		ServiceAgent testService2 = ServiceAgent.createServiceAgent(
+		testService2 = ServiceAgent.createServiceAgent(
 				ServiceNameVersion.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.1"), "a pass");
 		testService2.unlockPrivateKey("a pass");
 		
@@ -286,6 +288,10 @@ public class ServiceTest {
 			assertEquals(200, result7.getHttpCode());
 			assertTrue(result7.getResponse().contains("abel"));
 			System.out.println("Result of 'testGroups': " + result7.getResponse().trim());
+			
+			ClientResponse result77 = c.sendRequest("GET", mainPath + "groups/testGroupWhichDoesNotExist/member", "");
+			assertEquals(400, result77.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result77.getResponse().trim());
 
 			// now check with other agent again
 
@@ -365,6 +371,29 @@ public class ServiceTest {
 			assertEquals(200, result5.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result5.getResponse().trim());
 
+			ClientResponse result6 = c.sendRequest("GET", mainPath + "addressbook", "");
+			assertEquals(200, result6.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result6.getResponse().trim());
+			
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+	
+	@Test
+	public void testGetAddressBookWithoutArtifact() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			ClientResponse result6 = c.sendRequest("GET", mainPath + "addressbook", "");
+			assertEquals(200, result6.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result6.getResponse().trim());
+			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
@@ -385,12 +414,14 @@ public class ServiceTest {
 			System.out.println("Result of 'testRMI': " + result.getResponse().trim());
 			
 			// Set permissions
-			ClientResponse result1 = c.sendRequest("POST", mainPath + "permission", "");
+			ClientResponse result1 = c.sendRequest("POST", mainPath + "permission", "{firstName:" + "true" + ",lastName:" + "true" + ",userImage:"
+							+ "true" + "}");
 			assertEquals(200, result1.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result1.getResponse().trim());
 			
 			// Set Profile Information
-			ClientResponse result2 = c.sendRequest("POST", mainPath + "user", "");
+			ClientResponse result2 = c.sendRequest("POST", mainPath + "user", "{firstName:" + "\"Vorname\"" + ",lastName:" + "\"Nachname\"" + ",userImage:"
+					+ "\"Url\"" + "}");
 			assertEquals(200, result2.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
 			
@@ -401,10 +432,44 @@ public class ServiceTest {
 			ClientResponse result4 = c.sendRequest("GET", mainPath + "user/abel", "");
 			assertEquals(200, result4.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result4.getResponse().trim());
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+	
+	@Test
+	public void testRMIWithoutService() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		try {
+			node.unregisterReceiver(testService2);
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
 			
+			// Get permissions
+			ClientResponse result = c.sendRequest("GET", mainPath + "permission", "");
+			assertEquals(400, result.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result.getResponse().trim());
 			
+			// Set permissions
+			ClientResponse result1 = c.sendRequest("POST", mainPath + "permission", "{firstName:" + "true" + ",lastName:" + "true" + ",userImage:"
+							+ "true" + "}");
+			assertEquals(400, result1.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result1.getResponse().trim());
 			
+			// Set Profile Information
+			ClientResponse result2 = c.sendRequest("POST", mainPath + "user", "{firstName:" + "" + ",lastName:" + "" + ",userImage:"
+					+ "" + "}");
+			assertEquals(400, result2.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
 			
+			ClientResponse result3 = c.sendRequest("GET", mainPath + "user", "");
+			assertEquals(400, result3.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result3.getResponse().trim());
+			
+			ClientResponse result4 = c.sendRequest("GET", mainPath + "user/abel", "");
+			assertEquals(400, result4.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result4.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);

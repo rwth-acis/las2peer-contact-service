@@ -109,31 +109,28 @@ public class ContactService extends RESTService {
 			Agent owner = Context.getCurrent().getMainAgent();
 			String identifier = contact_prefix + owner.getId();
 			JSONObject result = new JSONObject();
-			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				HashSet<Long> userList = cc.getUserList();
-				UserAgent user;
-				for (Long l : userList) {
-					try {
-						user = (UserAgent) Context.getCurrent().getAgent(l);
-						result.put("" + user.getId(), user.getLoginName());
-					} catch (AgentNotKnownException e1) {
-						// Skip unknown agents.
+			try{
+				try {
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					HashSet<Long> userList = cc.getUserList();
+					UserAgent user;
+					for (Long l : userList) {
+						try {
+							user = (UserAgent) Context.getCurrent().getAgent(l);
+							result.put("" + user.getId(), user.getLoginName());
+						} catch (AgentNotKnownException e1) {
+							// Skip unknown agents.
+						}
 					}
-				}
-			} catch (ArtifactNotFoundException e) {
-				ContactContainer cc = new ContactContainer();
-				try{
+				} catch (ArtifactNotFoundException e) {
+					ContactContainer cc = new ContactContainer();
 					Envelope env = Context.getCurrent().createEnvelope(identifier, cc);
 					storeEnvelope(env);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {	
-					logger.log(Level.SEVERE, "Unknown error!", e);
-					e1.printStackTrace();
-				}
+				} 
 			} catch (Exception e) {
 				// write error to logfile and console
-				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
+				logger.log(Level.SEVERE, "Unknown Error occured!", e);
 				// create and publish a monitoring message
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 			}
@@ -170,33 +167,26 @@ public class ContactService extends RESTService {
 			// try to fetch user you want to add
 			try {
 				userID = Context.getCurrent().getLocalNode().getAgentIdForLogin(name);
-			} catch (AgentNotKnownException ex) {
+			} catch (L2pSecurityException | AgentNotKnownException ex) {
 				return Response.status(Status.NOT_FOUND).entity("Agent does not exist.").build();
-			} catch (Exception e) {
-				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
-				return Response.status(Status.BAD_REQUEST).build();
-			}
+			} 
 
 			// try to get envelope
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-
-				added = cc.addContact(userID);
-				env = Context.getCurrent().createEnvelope(stored, cc);
-			} catch (ArtifactNotFoundException e) {
-				ContactContainer cc = new ContactContainer();
 				try {
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+	
+					added = cc.addContact(userID);
+					env = Context.getCurrent().createEnvelope(stored, cc);
+				} catch (ArtifactNotFoundException e) {
+					ContactContainer cc = new ContactContainer();
 					added = cc.addContact(userID);
 					env = Context.getCurrent().createEnvelope(identifier, cc);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
-					logger.log(Level.SEVERE, "Unknown error!", e);
-					e1.printStackTrace();
-				}
+				} 
 			} catch (Exception e) {
 				// write error to logfile and console
-				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
+				logger.log(Level.SEVERE, "Unknown error occured!", e);
 				// create and publish a monitoring message
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).build();
@@ -538,6 +528,7 @@ public class ContactService extends RESTService {
 				logger.log(Level.SEVERE, "Can't get member names!", e);
 				// create and publish a monitoring message
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity(e.toString()).build();
 			}
 			return Response.status(Status.OK).entity(result).build();
 		}
@@ -686,15 +677,9 @@ public class ContactService extends RESTService {
 				added = cc.addContact(owner.getId());
 				try {
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-				} catch (IllegalArgumentException e) {
+				} catch (IllegalArgumentException | SerializationException | CryptoException e) {
 					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Identifier problems.").build();
-				} catch (SerializationException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Serialization problems.").build();
-				} catch (CryptoException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
+					return Response.status(Status.BAD_REQUEST).entity("Unknown error.").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -742,15 +727,9 @@ public class ContactService extends RESTService {
 				ContactContainer cc = new ContactContainer();
 				try {
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-				} catch (IllegalArgumentException e) {
+				} catch (IllegalArgumentException | SerializationException | CryptoException e) {
 					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Identifier problems.").build();
-				} catch (SerializationException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Serialization problems.").build();
-				} catch (CryptoException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
+					return Response.status(Status.BAD_REQUEST).entity("Unknown error.").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -805,16 +784,10 @@ public class ContactService extends RESTService {
 				try {
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
 					storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
-				} catch (IllegalArgumentException e) {
+				} catch (IllegalArgumentException | SerializationException | CryptoException e) {
 					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Identifier problems.").build();
-				} catch (SerializationException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Serialization problems.").build();
-				} catch (CryptoException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Cryptographic problems.").build();
-				}
+					return Response.status(Status.BAD_REQUEST).entity("Unknown error.").build();
+				} 
 				return Response.status(Status.OK).entity(result).build();
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -859,6 +832,7 @@ public class ContactService extends RESTService {
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).build();
 		}
@@ -892,6 +866,7 @@ public class ContactService extends RESTService {
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
 		}
@@ -925,6 +900,7 @@ public class ContactService extends RESTService {
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
 		}
@@ -962,6 +938,7 @@ public class ContactService extends RESTService {
 				// one may want to handle some exceptions differently
 				e.printStackTrace();
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
 		}
@@ -1002,6 +979,7 @@ public class ContactService extends RESTService {
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity("").build();
 		}
