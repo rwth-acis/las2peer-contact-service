@@ -69,7 +69,12 @@ public class ContactService extends RESTService {
 
 	@Override
 	protected void initResources() {
-		getResourceConfig().register(Resource.class);
+		getResourceConfig().register(ContactResource.class);
+		getResourceConfig().register(GroupResource.class);
+		getResourceConfig().register(AddressBookResource.class);
+		getResourceConfig().register(UserResource.class);
+		getResourceConfig().register(PermissionResource.class);
+		getResourceConfig().register(NameResource.class);
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +96,9 @@ public class ContactService extends RESTService {
 					license = @License(
 							name = "ACIS License (BSD3)",
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
-	public static class Resource {
+	public static class ContactResource {
+		ContactService service = (ContactService) Context.getCurrent().getService();
+		
 		// put here all your service methods
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
@@ -126,7 +133,7 @@ public class ContactService extends RESTService {
 				} catch (ArtifactNotFoundException e) {
 					ContactContainer cc = new ContactContainer();
 					Envelope env = Context.getCurrent().createEnvelope(identifier, cc);
-					storeEnvelope(env);
+					service.storeEnvelope(env);
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -196,7 +203,7 @@ public class ContactService extends RESTService {
 				return Response.status(Status.BAD_REQUEST).build();
 			}
 			// try to store envelope
-			storeEnvelope(env);
+			service.storeEnvelope(env);
 
 			if (added)
 				return Response.status(Status.OK).entity("Contact added.").build();
@@ -251,12 +258,32 @@ public class ContactService extends RESTService {
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Could not delete Contact").build();
 			}
-			storeEnvelope(env);
+			service.storeEnvelope(env);
 			if (deleted)
 				return Response.status(Status.OK).entity("Contact removed.").build();
 			else
 				return Response.status(Status.NOT_FOUND).entity("User is not one of your contacts.").build();
 		}
+	}
+	
+	@Path("/groups") // this is the root resource
+	@Api(
+			value = "Group Resource")
+	@SwaggerDefinition(
+			info = @Info(
+					title = "laspeer Contact Service",
+					version = "0.1",
+					description = "A las2peer Contact Service for managing your contacts and groups.",
+					termsOfService = "",
+					contact = @Contact(
+							name = "Alexander Neumann",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
+							email = "neumann@dbis.rwth-aachen.de"),
+					license = @License(
+							name = "ACIS License (BSD3)",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	public static class GroupResource {
+		ContactService service = (ContactService) Context.getCurrent().getService();
 
 		/**
 		 * Retrieve a list of all your groups.
@@ -264,7 +291,6 @@ public class ContactService extends RESTService {
 		 * @return Returns a Response containing a list of your groups
 		 */
 		@GET
-		@Path("/groups")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
 				value = "Get Groups",
@@ -303,7 +329,7 @@ public class ContactService extends RESTService {
 					ContactContainer cc = new ContactContainer();
 					Envelope env = null;
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-					storeEnvelope(env, Context.getCurrent().getServiceAgent());
+					service.storeEnvelope(env, Context.getCurrent().getServiceAgent());
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
@@ -323,7 +349,7 @@ public class ContactService extends RESTService {
 		 * 
 		 */
 		@GET
-		@Path("/groups/{name}")
+		@Path("/{name}")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
 				value = "Get Group from Name",
@@ -364,7 +390,7 @@ public class ContactService extends RESTService {
 		 * 
 		 */
 		@POST
-		@Path("/groups/{name}")
+		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiResponses(
 				value = { @ApiResponse(
@@ -404,7 +430,7 @@ public class ContactService extends RESTService {
 				cc.addGroup(name, id);
 				try {
 					env = Context.getCurrent().createEnvelope(identifier, cc, groupAgent);
-					storeEnvelope(env, groupAgent);
+					service.storeEnvelope(env, groupAgent);
 				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
 					logger.log(Level.SEVERE, "Unknown error!", e);
 					e1.printStackTrace();
@@ -443,7 +469,7 @@ public class ContactService extends RESTService {
 				e.printStackTrace();
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			storeEnvelope(env2, Context.getCurrent().getServiceAgent());
+			service.storeEnvelope(env2, Context.getCurrent().getServiceAgent());
 			return Response.status(Status.OK).entity("" + id).build();
 		}
 
@@ -454,7 +480,7 @@ public class ContactService extends RESTService {
 		 * @return Returns a Response whether the group could be deleted or not.
 		 */
 		@DELETE
-		@Path("/groups/{name}")
+		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiResponses(
 				value = { @ApiResponse(
@@ -478,7 +504,7 @@ public class ContactService extends RESTService {
 				GroupAgent ga = Context.getCurrent().requestGroupAgent(groupID);
 				ga.removeMember(Context.getCurrent().getMainAgent());
 				Context.getCurrent().getLocalNode().storeAgent(ga);
-				storeEnvelope(env);
+				service.storeEnvelope(env);
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -486,7 +512,7 @@ public class ContactService extends RESTService {
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			storeEnvelope(env);
+			service.storeEnvelope(env);
 			return Response.status(Status.OK).build();
 		}
 
@@ -497,7 +523,7 @@ public class ContactService extends RESTService {
 		 * @return Returns a Response with the list of all members.
 		 */
 		@GET
-		@Path("/groups/{name}/member")
+		@Path("/{name}/member")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
 				value = "Get Group Member",
@@ -541,7 +567,7 @@ public class ContactService extends RESTService {
 		 * @return Returns a Response
 		 */
 		@POST
-		@Path("/groups/{name}/member/{user}")
+		@Path("/{name}/member/{user}")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiResponses(
 				value = { @ApiResponse(
@@ -579,7 +605,7 @@ public class ContactService extends RESTService {
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			storeEnvelope(env, groupAgent);
+			service.storeEnvelope(env, groupAgent);
 			try {
 				Context.getCurrent().getLocalNode().updateAgent(groupAgent);
 			} catch (AgentAlreadyRegisteredException e) {
@@ -604,7 +630,7 @@ public class ContactService extends RESTService {
 		 * @return Returns a Response
 		 */
 		@DELETE
-		@Path("/groups/{name}/member/{user}")
+		@Path("/{name}/member/{user}")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiResponses(
 				value = { @ApiResponse(
@@ -638,7 +664,7 @@ public class ContactService extends RESTService {
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			storeEnvelope(env, groupAgent);
+			service.storeEnvelope(env, groupAgent);
 			try {
 				Context.getCurrent().getLocalNode().storeAgent(groupAgent);
 			} catch (AgentAlreadyRegisteredException e) {
@@ -654,9 +680,29 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.OK).entity("Removed from group.").build();
 		}
+	}
+	
+	
+	@Path("/addressbook") // this is the root resource
+	@Api(
+			value = "Address Book Resource")
+	@SwaggerDefinition(
+			info = @Info(
+					title = "laspeer Contact Service",
+					version = "0.1",
+					description = "A las2peer Contact Service for managing your contacts and groups.",
+					termsOfService = "",
+					contact = @Contact(
+							name = "Alexander Neumann",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
+							email = "neumann@dbis.rwth-aachen.de"),
+					license = @License(
+							name = "ACIS License (BSD3)",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	public static class AddressBookResource {
+		ContactService service = (ContactService) Context.getCurrent().getService();
 
 		@POST
-		@Path("/addressbook")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
 				value = "Add to Address Book",
@@ -691,7 +737,7 @@ public class ContactService extends RESTService {
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
+			service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 			if (added)
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
 			else
@@ -699,7 +745,6 @@ public class ContactService extends RESTService {
 		}
 
 		@DELETE
-		@Path("/addressbook")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
 				value = "Remove from Address Book",
@@ -734,16 +779,15 @@ public class ContactService extends RESTService {
 				return Response.status(Status.OK).entity("Could not be removed from list.").build();
 			}
 			if (deleted) {
-				storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
+				service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
-				storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
+				service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.NOT_FOUND).entity("You were not in the list.").build();
 			}
 		}
 
 		@GET
-		@Path("/addressbook")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
 				value = "Get Address Book",
@@ -778,7 +822,7 @@ public class ContactService extends RESTService {
 					Envelope env = null;
 					ContactContainer cc = new ContactContainer();
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-					storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
+					service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
@@ -789,12 +833,32 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.BAD_REQUEST).entity("Could not get any contacts.").build();
 		}
+	}
+	
+	@Path("/user") // this is the root resource
+	@Api(
+			value = "User Resource")
+	@SwaggerDefinition(
+			info = @Info(
+					title = "laspeer Contact Service",
+					version = "0.1",
+					description = "A las2peer Contact Service for managing your contacts and groups.",
+					termsOfService = "",
+					contact = @Contact(
+							name = "Alexander Neumann",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
+							email = "neumann@dbis.rwth-aachen.de"),
+					license = @License(
+							name = "ACIS License (BSD3)",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	public static class UserResource {
+		ContactService service = (ContactService) Context.getCurrent().getService();
+	
 		// //////////////////////////////////////////////////////////////////////////////////////
 		// RMI Calls
 		// //////////////////////////////////////////////////////////////////////////////////////
 
 		@POST
-		@Path("/user")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiResponses(
 				value = { @ApiResponse(
@@ -830,7 +894,6 @@ public class ContactService extends RESTService {
 		}
 
 		@GET
-		@Path("/user")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
 				value = "Get User Information",
@@ -864,7 +927,7 @@ public class ContactService extends RESTService {
 		}
 
 		@GET
-		@Path("/user/{name}")
+		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
 				value = "Get User Information for Name",
@@ -896,9 +959,28 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.OK).entity(returnString).build();
 		}
-
+	}
+	
+	@Path("/permission") // this is the root resource
+	@Api(
+			value = "Permission Resource")
+	@SwaggerDefinition(
+			info = @Info(
+					title = "laspeer Contact Service",
+					version = "0.1",
+					description = "A las2peer Contact Service for managing your contacts and groups.",
+					termsOfService = "",
+					contact = @Contact(
+							name = "Alexander Neumann",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
+							email = "neumann@dbis.rwth-aachen.de"),
+					license = @License(
+							name = "ACIS License (BSD3)",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	public static class PermissionResource {
+		ContactService service = (ContactService) Context.getCurrent().getService();
+		
 		@GET
-		@Path("/permission")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
 				value = "Get User Permission",
@@ -942,7 +1024,6 @@ public class ContactService extends RESTService {
 		 * @return Response
 		 */
 		@POST
-		@Path("/permission")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiResponses(
 				value = { @ApiResponse(
@@ -975,7 +1056,11 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.OK).entity("").build();
 		}
-
+	}
+	
+	@Path("/name") // this is the root resource
+	public static class NameResource {
+		ContactService service = (ContactService) Context.getCurrent().getService();
 		/**
 		 * Function to get the login name of an agent
 		 * 
@@ -983,22 +1068,9 @@ public class ContactService extends RESTService {
 		 * @return The login name
 		 */
 		@GET
-		@Path("/name/{id}")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got name."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_NOT_FOUND,
-								message = "Agent Not Found"),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_INTERNAL_ERROR,
-								message = "Internal error") })
-		@ApiOperation(
-				value = "Get Name",
-				notes = "Get the name of an agent")
+		@Path("/{id}")
 		public Response getName(@PathParam("id") String id) {
-
+	
 			long agentid = Long.parseLong(id);
 			try {
 				UserAgent user = (UserAgent) Context.getCurrent().getAgent(agentid);
@@ -1009,34 +1081,34 @@ public class ContactService extends RESTService {
 				return Response.status(Status.NOT_FOUND).entity(error).build();
 			}
 		}
+	}
+	
+	/**
+	 * Envelope helper method for storing an envelope.
+	 * 
+	 * @param env Envelope.
+	 */
+	private void storeEnvelope(Envelope env) {
+		try {
+			Context.getCurrent().storeEnvelope(env);
+		} catch (StorageException e) {
 
-		/**
-		 * Envelope helper method for storing an envelope.
-		 * 
-		 * @param env Envelope.
-		 */
-		private void storeEnvelope(Envelope env) {
-			try {
-				Context.getCurrent().storeEnvelope(env);
-			} catch (StorageException e) {
-
-				e.printStackTrace();
-			}
+			e.printStackTrace();
 		}
+	}
 
-		/**
-		 * Envelope helper method for storing an envelope.
-		 * 
-		 * @param env Envelope.
-		 * @param owner Agent who owns the envelope.
-		 */
-		private void storeEnvelope(Envelope env, Agent owner) {
-			try {
-				Context.getCurrent().storeEnvelope(env, owner);
-			} catch (StorageException e) {
+	/**
+	 * Envelope helper method for storing an envelope.
+	 * 
+	 * @param env Envelope.
+	 * @param owner Agent who owns the envelope.
+	 */
+	private void storeEnvelope(Envelope env, Agent owner) {
+		try {
+			Context.getCurrent().storeEnvelope(env, owner);
+		} catch (StorageException e) {
 
-				e.printStackTrace();
-			}
+			e.printStackTrace();
 		}
 	}
 }
