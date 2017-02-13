@@ -251,6 +251,10 @@ public class ServiceTest {
 			result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(400, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
+			
+			result = c.sendRequest("POST", mainPath + "groups/anotherGroup", "");
+			assertEquals(200, result.getHttpCode());
+			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
 
 			// Check groups
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
@@ -565,9 +569,8 @@ public class ServiceTest {
 			System.out.println("Result of 'testAddRemoveContact': " + result2.getResponse().trim());
 			
 			// Check groups
-			ClientResponse result4 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
-					new HashMap<String, String>());
-			assertEquals(200, result4.getHttpCode());
+			ClientResponse result4 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
+			assertEquals(400, result4.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
 			
 			
