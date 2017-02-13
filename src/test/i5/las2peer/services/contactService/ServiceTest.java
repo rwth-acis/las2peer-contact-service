@@ -14,8 +14,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import i5.las2peer.p2p.PastryNodeImpl;
+import i5.las2peer.persistency.Envelope;
 import i5.las2peer.persistency.SharedStorage.STORAGE_MODE;
 import i5.las2peer.p2p.ServiceNameVersion;
+import i5.las2peer.security.Agent;
 import i5.las2peer.security.ServiceAgent;
 import i5.las2peer.security.UserAgent;
 import i5.las2peer.testing.MockAgentFactory;
@@ -318,6 +320,10 @@ public class ServiceTest {
 			ClientResponse result11 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
 			assertEquals(200, result11.getHttpCode());
 			
+			// remove again should not work
+			result11 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
+			assertEquals(400, result11.getHttpCode());
+			
 			result9 = c.sendRequest("GET", mainPath + "groups/testGroup", "");
 			assertEquals(400, result9.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
@@ -477,6 +483,70 @@ public class ServiceTest {
 	}
 	
 	@Test
+	public void testBlockEnvelopes(){
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			agentEve.unlockPrivateKey(passEve);
+			// Blocking contacts
+			createEnvelope("contacts_"+Long.toString(agentAdam.getId()),agentEve);
+
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			// get Contacts with no contacts
+			ClientResponse result = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(400, result.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
+			
+			result = c.sendRequest("POST", mainPath + "eve1st", "");
+			assertEquals(400, result.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
+			
+			result = c.sendRequest("DELETE", mainPath + "eve1st", "");
+			assertEquals(400, result.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
+			
+			// Blocking groups
+			createEnvelope("groups_",agentEve);
+			createEnvelope("groups_test",agentEve);
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(400, result2.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result2.getResponse().trim());
+			
+			result2 = c.sendRequest("POST", mainPath + "groups/testGroup/member/abel", "");
+			assertEquals(400, result2.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result2.getResponse().trim());
+			
+			result2 = c.sendRequest("DELETE", mainPath + "groups/testGroup/member/abel", "");
+			assertEquals(400, result2.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result2.getResponse().trim());
+			
+			// Blocking address book
+			createEnvelope("addressbook",agentEve);
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			
+			ClientResponse result3 = c.sendRequest("POST", mainPath + "addressbook", "");
+			assertEquals(400, result3.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result3.getResponse().trim());
+			
+			result3 = c.sendRequest("DELETE", mainPath + "addressbook", "");
+			assertEquals(400, result3.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result3.getResponse().trim());
+			
+			result3 = c.sendRequest("GET", mainPath + "addressbook", "");
+			assertEquals(400, result3.getHttpCode());
+			System.out.println("Result of 'testBlockEnvelopes': " + result3.getResponse().trim());
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+	
+	@Test
 	public void testRemoveWithoutStorage() {
 		MiniClient c = new MiniClient();
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
@@ -504,6 +574,19 @@ public class ServiceTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
+		}
+	}
+	
+	// helper method 
+	public void createEnvelope(String identifier, Agent owner){
+		ContactContainer cc = new ContactContainer();
+		try {
+			Envelope env = node.createEnvelope(identifier, cc, owner);
+			node.storeEnvelope(env, owner);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			//fail("Could not create Envelope.\n"+e.getMessage());
+			e.printStackTrace();
 		}
 	}
 	
