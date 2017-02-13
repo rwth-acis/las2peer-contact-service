@@ -53,21 +53,6 @@ import net.minidev.json.parser.JSONParser;
  * 
  */
 @ServicePath("contactservice")
-@Api
-@SwaggerDefinition(
-		info = @Info(
-				title = "laspeer Contact Service",
-				version = "0.1",
-				description = "A las2peer Contact Service for managing your contacts and groups.",
-				termsOfService = "",
-				contact = @Contact(
-						name = "Alexander Neumann",
-						url = "https://github.com/rwth-acis/las2peer-Contact-Service",
-						email = "alexander.tobias.neumann@rwth-aachen.de"),
-				license = @License(
-						name = "",
-						url = "")))
-
 public class ContactService extends RESTService {
 
 	// instantiate the logger class
@@ -91,25 +76,40 @@ public class ContactService extends RESTService {
 	// Service methods.
 	// //////////////////////////////////////////////////////////////////////////////////////
 	@Path("/") // this is the root resource
+	@Api(
+			value = "Contact Resource")
+	@SwaggerDefinition(
+			info = @Info(
+					title = "laspeer Contact Service",
+					version = "0.1",
+					description = "A las2peer Contact Service for managing your contacts and groups.",
+					termsOfService = "",
+					contact = @Contact(
+							name = "Alexander Neumann",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
+							email = "neumann@dbis.rwth-aachen.de"),
+					license = @License(
+							name = "ACIS License (BSD3)",
+							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class Resource {
 		// put here all your service methods
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
-				value = "getContacts",
-				notes = "Get all contacts")
+				value = "Get Contacts",
+				notes = "Get all your contacts.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Got a list of your contacts."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems.") })
 		public Response getContacts() {
 			Agent owner = Context.getCurrent().getMainAgent();
 			String identifier = contact_prefix + owner.getId();
 			JSONObject result = new JSONObject();
-			try{
+			try {
 				try {
 					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
 					ContactContainer cc = (ContactContainer) stored.getContent();
@@ -127,12 +127,13 @@ public class ContactService extends RESTService {
 					ContactContainer cc = new ContactContainer();
 					Envelope env = Context.getCurrent().createEnvelope(identifier, cc);
 					storeEnvelope(env);
-				} 
+				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Unknown Error occured!", e);
 				// create and publish a monitoring message
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
+				return Response.status(Status.BAD_REQUEST).entity(e.toString()).build();
 			}
 			return Response.status(Status.OK).entity(result).build();
 		}
@@ -147,15 +148,18 @@ public class ContactService extends RESTService {
 		@Path("{name}")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
-				value = "addContact",
-				notes = "Add a contact")
+				value = "Add Contact",
+				notes = "Add a contact to your contact list.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Contact added"),
+						message = "Contact added."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Contact already in list or storage problems."),
+						@ApiResponse(
+								code = HttpURLConnection.HTTP_NOT_FOUND,
+								message = "Agent does not exist.") })
 		public Response addContact(@PathParam("name") String name) {
 			// Setting owner and identifier for envelope
 			Agent owner = Context.getCurrent().getMainAgent();
@@ -169,21 +173,21 @@ public class ContactService extends RESTService {
 				userID = Context.getCurrent().getLocalNode().getAgentIdForLogin(name);
 			} catch (L2pSecurityException | AgentNotKnownException ex) {
 				return Response.status(Status.NOT_FOUND).entity("Agent does not exist.").build();
-			} 
+			}
 
 			// try to get envelope
 			try {
 				try {
 					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
 					ContactContainer cc = (ContactContainer) stored.getContent();
-	
+
 					added = cc.addContact(userID);
 					env = Context.getCurrent().createEnvelope(stored, cc);
 				} catch (ArtifactNotFoundException e) {
 					ContactContainer cc = new ContactContainer();
 					added = cc.addContact(userID);
 					env = Context.getCurrent().createEnvelope(identifier, cc);
-				} 
+				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Unknown error occured!", e);
@@ -212,13 +216,16 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Contact removed"),
+						message = "Contact removed."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Contact not in list or storage problems."),
+						@ApiResponse(
+								code = HttpURLConnection.HTTP_NOT_FOUND,
+								message = "Agent does not exist.") })
 		@ApiOperation(
-				value = "removeContact",
-				notes = "removes a contact")
+				value = "Remove Contact",
+				notes = "Removes a contact from your contact list.")
 		public Response removeContact(@PathParam("name") String name) {
 			Agent owner = Context.getCurrent().getMainAgent();
 			String identifier = contact_prefix + owner.getId();
@@ -260,15 +267,15 @@ public class ContactService extends RESTService {
 		@Path("/groups")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
-				value = "getGroup",
-				notes = "get all your groups")
+				value = "Get Groups",
+				notes = "Get all your Groups.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Got a list of your groups."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems.") })
 		public Response getGroups() {
 			Agent member = Context.getCurrent().getMainAgent();
 			String identifier = group_prefix;
@@ -319,15 +326,15 @@ public class ContactService extends RESTService {
 		@Path("/groups/{name}")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
-				value = "getGroup",
-				notes = "Get a group via name")
+				value = "Get Group from Name",
+				notes = "Get a group via name.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Group found."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Group not found or storage problems.") })
 		public Response getGroup(@PathParam("name") String name) {
 			String identifier = group_prefix + name;
 			try {
@@ -362,12 +369,12 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Group created."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems or group already exist.") })
 		@ApiOperation(
-				value = "createGroup",
+				value = "Create Group",
 				notes = "Creates a group")
 		public Response addGroup(@PathParam("name") String name) {
 			// Setting owner group members
@@ -379,10 +386,10 @@ public class ContactService extends RESTService {
 			String identifier = group_prefix + name;
 			String identifier2 = group_prefix;
 			GroupAgent groupAgent;
-			
+
 			try {
 				Context.getCurrent().fetchEnvelope(identifier);
-				return Response.status(Status.BAD_REQUEST).entity("Group already exist").build(); 
+				return Response.status(Status.BAD_REQUEST).entity("Group already exist").build();
 			} catch (ArtifactNotFoundException e) {
 				ContactContainer cc = new ContactContainer();
 				// try to create group
@@ -437,7 +444,7 @@ public class ContactService extends RESTService {
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
 			storeEnvelope(env2, Context.getCurrent().getServiceAgent());
-			return Response.status(Status.OK).entity("" + id).build(); 
+			return Response.status(Status.OK).entity("" + id).build();
 		}
 
 		/**
@@ -452,13 +459,13 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Group removed"),
+						message = "Group removed."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Group does not exist or storage problems.") })
 		@ApiOperation(
-				value = "removeGroup",
-				notes = "removes a group")
+				value = "Remove Group",
+				notes = "Removes a group.")
 		public Response removeGroup(@PathParam("name") String name) {
 			Envelope env = null;
 			try {
@@ -493,15 +500,15 @@ public class ContactService extends RESTService {
 		@Path("/groups/{name}/member")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
-				value = "getGroupMember",
-				notes = "get all members of your group")
+				value = "Get Group Member",
+				notes = "Get all members of your group.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Got all members of a group"),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems.") })
 		public Response getGroupMember(@PathParam("name") String name) {
 			JSONObject result = new JSONObject();
 			String identifier = group_prefix + name;
@@ -539,13 +546,16 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Update successfull"),
+						message = "Groupmember added."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems."),
+						@ApiResponse(
+								code = HttpURLConnection.HTTP_NOT_FOUND,
+								message = "Agent does not exist.") })
 		@ApiOperation(
-				value = "addGroupMember",
-				notes = "Add a member to a group")
+				value = "Add Group Member",
+				notes = "Add a member to a group.")
 		public Response addGroupMember(@PathParam("name") String groupName, @PathParam("user") String userName) {
 			Envelope env = null;
 			long addID = -1;
@@ -599,13 +609,16 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Update successfull"),
+						message = "Groupmember removed."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems."),
+						@ApiResponse(
+								code = HttpURLConnection.HTTP_NOT_FOUND,
+								message = "Agent does not exist.") })
 		@ApiOperation(
-				value = "removeGroupMember",
-				notes = "Add a member to a group")
+				value = "Remove Group Member",
+				notes = "Removes a member from a group.")
 		public Response removeGroupMember(@PathParam("name") String groupName, @PathParam("user") String userName) {
 			Envelope env = null;
 			GroupAgent groupAgent = null;
@@ -646,15 +659,15 @@ public class ContactService extends RESTService {
 		@Path("/addressbook")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
-				value = "addToAddressBook",
-				notes = "Add yourself to the address book")
+				value = "Add to Address Book",
+				notes = "Add yourself to the address book.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
 						message = "Added"),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems or already in list.") })
 		public Response addToAddressBook() {
 			Agent owner = Context.getCurrent().getMainAgent();
 			String identifier = address_prefix;
@@ -669,7 +682,7 @@ public class ContactService extends RESTService {
 				} catch (ArtifactNotFoundException ex) {
 					ContactContainer cc = new ContactContainer();
 					added = cc.addContact(owner.getId());
-					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);	
+					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -689,20 +702,20 @@ public class ContactService extends RESTService {
 		@Path("/addressbook")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
-				value = "removeFromAddressBook",
-				notes = "Add yourself to the address book")
+				value = "Remove from Address Book",
+				notes = "Removes yourself from the address book.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Added"),
+						message = "Removed from address book."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems or you were not in the list.") })
 		public Response removeFromAddressBook() {
 			String identifier = address_prefix;
 			Envelope env = null;
 			boolean deleted = false;
-			try{
+			try {
 				try {
 					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
 					ContactContainer cc = (ContactContainer) stored.getContent();
@@ -721,10 +734,10 @@ public class ContactService extends RESTService {
 				return Response.status(Status.OK).entity("Could not be removed from list.").build();
 			}
 			if (deleted) {
-				storeEnvelope(env,Context.getCurrent().getLocalNode().getAnonymous());
+				storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
-				storeEnvelope(env,Context.getCurrent().getLocalNode().getAnonymous());
+				storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.NOT_FOUND).entity("You were not in the list.").build();
 			}
 		}
@@ -733,19 +746,19 @@ public class ContactService extends RESTService {
 		@Path("/addressbook")
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
-				value = "getAddressBook",
-				notes = "get all contacts from the addressbook")
+				value = "Get Address Book",
+				notes = "Get all contacts from the address book.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Contacts received"),
+						message = "Contacts received."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems.") })
 		public Response getAddressBook() {
 			String identifier = address_prefix;
 			JSONObject result = new JSONObject();
-			try{
+			try {
 				try {
 					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
 					ContactContainer cc = (ContactContainer) stored.getContent();
@@ -786,13 +799,13 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Update successfull"),
+						message = "Updated user information."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "RMI error or wrong json.") })
 		@ApiOperation(
-				value = "updateUserInformation",
-				notes = "Updates the name and the userimage")
+				value = "Update User Information",
+				notes = "Updates the name and the userimage.")
 		public Response updateUserInformationREST(String content) {
 			try {
 				JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
@@ -820,15 +833,15 @@ public class ContactService extends RESTService {
 		@Path("/user")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
-				value = "getUserInformation",
-				notes = "Returns the name and the userimage")
+				value = "Get User Information",
+				notes = "Returns the name and the user image.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Got user information."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "RMI error.") })
 		public Response getUserInformation() {
 			String returnString = "";
 			try {
@@ -854,15 +867,15 @@ public class ContactService extends RESTService {
 		@Path("/user/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
-				value = "getUserInformation",
-				notes = "Returns the name and the userimage")
+				value = "Get User Information for Name",
+				notes = "Returns the name and the user image for a given user.")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Got user information"),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "RMI error or user does not exist.") })
 		public Response getUserInformation(@PathParam("name") String name) {
 			String returnString = "";
 			try {
@@ -888,15 +901,15 @@ public class ContactService extends RESTService {
 		@Path("/permission")
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
-				value = "getUserPermission",
-				notes = "Returns a field of permissions")
+				value = "Get User Permission",
+				notes = "Returns a field of the user's permissions")
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "REPLACE THIS WITH YOUR OK MESSAGE"),
+						message = "Got user permission."),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "RMI error.") })
 		public Response getUserPermissions() {
 			String returnString = "No Response";
 			try {
@@ -934,10 +947,10 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Update successfull"),
+						message = "Updated permissions"),
 						@ApiResponse(
-								code = HttpURLConnection.HTTP_UNAUTHORIZED,
-								message = "Unauthorized") })
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "RMI error or wrong json.") })
 		@ApiOperation(
 				value = "updateUserPermission",
 				notes = "Updates the name and the userimage")
@@ -974,16 +987,16 @@ public class ContactService extends RESTService {
 		@ApiResponses(
 				value = { @ApiResponse(
 						code = HttpURLConnection.HTTP_OK,
-						message = "Name"),
+						message = "Got name."),
 						@ApiResponse(
 								code = HttpURLConnection.HTTP_NOT_FOUND,
-								message = "Not Found"),
+								message = "Agent Not Found"),
 						@ApiResponse(
 								code = HttpURLConnection.HTTP_INTERNAL_ERROR,
 								message = "Internal error") })
 		@ApiOperation(
-				value = "name",
-				notes = "get the name of an agent")
+				value = "Get Name",
+				notes = "Get the name of an agent")
 		public Response getName(@PathParam("id") String id) {
 
 			long agentid = Long.parseLong(id);
@@ -994,7 +1007,7 @@ public class ContactService extends RESTService {
 			} catch (AgentNotKnownException e) {
 				String error = "Agent not found";
 				return Response.status(Status.NOT_FOUND).entity(error).build();
-			} 
+			}
 		}
 
 		/**
