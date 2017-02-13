@@ -224,23 +224,19 @@ public class ContactService extends RESTService {
 			String identifier = contact_prefix + owner.getId();
 			Envelope env = null;
 			boolean deleted = false;
-
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				long userID = Context.getCurrent().getLocalNode().getAgentIdForLogin(name);
-				deleted = cc.removeContact(userID);
-				env = Context.getCurrent().createEnvelope(stored, cc);
-			} catch (ArtifactNotFoundException e) {
-				ContactContainer cc = new ContactContainer();
 				try {
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					long userID = Context.getCurrent().getLocalNode().getAgentIdForLogin(name);
+					deleted = cc.removeContact(userID);
+					env = Context.getCurrent().createEnvelope(stored, cc);
+				} catch (ArtifactNotFoundException e) {
+					ContactContainer cc = new ContactContainer();
 					env = Context.getCurrent().createEnvelope(identifier, cc);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
-					logger.log(Level.SEVERE, "Unknown error!", e);
-					e1.printStackTrace();
+				} catch (AgentNotKnownException ex) {
+					return Response.status(Status.NOT_FOUND).entity("Agent does not exist").build();
 				}
-			} catch (AgentNotKnownException ex) {
-				return Response.status(Status.NOT_FOUND).entity("Agent does not exist").build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -278,34 +274,31 @@ public class ContactService extends RESTService {
 			String identifier = group_prefix;
 			JSONObject result = new JSONObject();
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				Set<String> groupNames = cc.getGroups().keySet();
-				GroupAgent group = null;
-				long groupId = -1;
-				for (String s : groupNames) {
-					try {
-						groupId = cc.getGroupId(s);
-						group = Context.getCurrent().requestGroupAgent(groupId);
-						if (group.isMember(member)) {
-							result.put("" + groupId, s);
-						}
-					} catch (Exception e) {
-						// Skip agents who are not known or groups wihtout access.
-					}
-				}
-				return Response.status(Status.OK).entity(result).build();
-			} catch (ArtifactNotFoundException e) {
-				ContactContainer cc = new ContactContainer();
-				Envelope env = null;
 				try {
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					Set<String> groupNames = cc.getGroups().keySet();
+					GroupAgent group = null;
+					long groupId = -1;
+					for (String s : groupNames) {
+						try {
+							groupId = cc.getGroupId(s);
+							group = Context.getCurrent().requestGroupAgent(groupId);
+							if (group.isMember(member)) {
+								result.put("" + groupId, s);
+							}
+						} catch (Exception e) {
+							// Skip agents who are not known or groups wihtout access.
+						}
+					}
+					return Response.status(Status.OK).entity(result).build();
+				} catch (ArtifactNotFoundException e) {
+					ContactContainer cc = new ContactContainer();
+					Envelope env = null;
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
-					logger.log(Level.SEVERE, "Unknown error!", e);
-					e1.printStackTrace();
+					storeEnvelope(env, Context.getCurrent().getServiceAgent());
+					return Response.status(Status.OK).entity(result).build();
 				}
-				storeEnvelope(env, Context.getCurrent().getServiceAgent());
-				return Response.status(Status.OK).entity(result).build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -668,18 +661,15 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			boolean added = false;
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				added = cc.addContact(owner.getId());
-				env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
-			} catch (ArtifactNotFoundException ex) {
-				ContactContainer cc = new ContactContainer();
-				added = cc.addContact(owner.getId());
 				try {
-					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Unknown error.").build();
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					added = cc.addContact(owner.getId());
+					env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
+				} catch (ArtifactNotFoundException ex) {
+					ContactContainer cc = new ContactContainer();
+					added = cc.addContact(owner.getId());
+					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);	
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -688,12 +678,7 @@ public class ContactService extends RESTService {
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			try {
-				Context.getCurrent().storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
-			} catch (StorageException e) {
-				e.printStackTrace();
-				return Response.status(Status.BAD_REQUEST).entity("Storage problems.").build();
-			}
+			storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 			if (added)
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
 			else
@@ -717,19 +702,16 @@ public class ContactService extends RESTService {
 			String identifier = address_prefix;
 			Envelope env = null;
 			boolean deleted = false;
-			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				long userID = Context.getCurrent().getMainAgent().getId();
-				deleted = cc.removeContact(userID);
-				env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
-			} catch (ArtifactNotFoundException ex) {
-				ContactContainer cc = new ContactContainer();
+			try{
 				try {
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					long userID = Context.getCurrent().getMainAgent().getId();
+					deleted = cc.removeContact(userID);
+					env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
+				} catch (ArtifactNotFoundException ex) {
+					ContactContainer cc = new ContactContainer();
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Unknown error.").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -763,32 +745,29 @@ public class ContactService extends RESTService {
 		public Response getAddressBook() {
 			String identifier = address_prefix;
 			JSONObject result = new JSONObject();
-			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				HashSet<Long> list = cc.getUserList();
-				UserAgent user;
-				for (Long l : list) {
-					try {
-						user = (UserAgent) Context.getCurrent().getAgent(l);
-						result.put("" + user.getId(), user.getLoginName());
-					} catch (AgentNotKnownException e1) {
-						// Skip unknown agents
-						e1.printStackTrace();
-					}
-				}
-				return Response.status(Status.OK).entity(result).build();
-			} catch (ArtifactNotFoundException ex) {
-				Envelope env = null;
-				ContactContainer cc = new ContactContainer();
+			try{
 				try {
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					HashSet<Long> list = cc.getUserList();
+					UserAgent user;
+					for (Long l : list) {
+						try {
+							user = (UserAgent) Context.getCurrent().getAgent(l);
+							result.put("" + user.getId(), user.getLoginName());
+						} catch (AgentNotKnownException e1) {
+							// Skip unknown agents
+							e1.printStackTrace();
+						}
+					}
+					return Response.status(Status.OK).entity(result).build();
+				} catch (ArtifactNotFoundException ex) {
+					Envelope env = null;
+					ContactContainer cc = new ContactContainer();
 					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
 					storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
-				} catch (IllegalArgumentException | SerializationException | CryptoException e) {
-					e.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Unknown error.").build();
-				} 
-				return Response.status(Status.OK).entity(result).build();
+					return Response.status(Status.OK).entity(result).build();
+				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
