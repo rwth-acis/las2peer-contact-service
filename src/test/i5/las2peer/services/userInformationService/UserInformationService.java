@@ -1,5 +1,6 @@
 package i5.las2peer.services.userInformationService;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,18 +8,18 @@ import i5.las2peer.api.Service;
 
 public class UserInformationService extends Service{
 	
-	public void setPermissions(Map<String, Boolean> map){
-		
+	public boolean setPermissions(Map<String, Boolean> permissions) {
+		return true;
 	}
 	
-	public Map<String,Boolean> getPermissions(){
+	public Map<String, Boolean> getPermissions(String[] fields) {
 		return new HashMap<String,Boolean>();
 	}
-	public void set(Map<String,String> map){
-		
+	public boolean set(Map<String, Serializable> values) {
+		return true;
 	}
 	
-	public Map<String,String> get(long id,Map<String,String> fields){
-		return new HashMap<String,String>();
+	public Map<String, Serializable> get(long agentId, String[] fields){
+		return new HashMap<String,Serializable>();
 	}
 }

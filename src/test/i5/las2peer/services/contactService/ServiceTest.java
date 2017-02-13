@@ -76,7 +76,7 @@ public class ServiceTest {
 		testService.unlockPrivateKey("a pass");
 		
 		ServiceAgent testService2 = ServiceAgent.createServiceAgent(
-				ServiceNameVersion.fromString("i5.las2peer.services.userInformationService.UserInformationService@1.0"), "a pass");
+				ServiceNameVersion.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.1"), "a pass");
 		testService2.unlockPrivateKey("a pass");
 		
 		node.registerReceiver(testService);
