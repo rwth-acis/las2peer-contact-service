@@ -776,7 +776,7 @@ public class ContactService extends RESTService {
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				// create and publish a monitoring message
 				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
-				return Response.status(Status.OK).entity("Could not be removed from list.").build();
+				return Response.status(Status.BAD_REQUEST).entity("Could not be removed from list.").build();
 			}
 			if (deleted) {
 				service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
