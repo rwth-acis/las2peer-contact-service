@@ -60,7 +60,6 @@ public class ServiceTest {
 		// start node
 		nodes = TestSuite.launchNetwork(1, STORAGE_MODE.FILESYSTEM, true);
 		node = nodes.get(0);
-		node.launch();
 		agentAdam = MockAgentFactory.getAdam();
 		agentAdam.unlockPrivateKey(passAdam);
 		agentEve = MockAgentFactory.getEve();
@@ -75,8 +74,13 @@ public class ServiceTest {
 		ServiceAgent testService = ServiceAgent.createServiceAgent(
 				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@1.0"), "a pass");
 		testService.unlockPrivateKey("a pass");
-
+		
+		ServiceAgent testService2 = ServiceAgent.createServiceAgent(
+				ServiceNameVersion.fromString("i5.las2peer.services.userInformationService.UserInformationService@1.0"), "a pass");
+		testService2.unlockPrivateKey("a pass");
+		
 		node.registerReceiver(testService);
+		node.registerReceiver(testService2);
 
 		// start connector
 		logStream = new ByteArrayOutputStream();
@@ -361,6 +365,46 @@ public class ServiceTest {
 			assertEquals(200, result5.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result5.getResponse().trim());
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+	
+	@Test
+	public void testRMI() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			
+			// Get permissions
+			ClientResponse result = c.sendRequest("GET", mainPath + "permission", "");
+			assertEquals(200, result.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result.getResponse().trim());
+			
+			// Set permissions
+			ClientResponse result1 = c.sendRequest("POST", mainPath + "permission", "");
+			assertEquals(200, result1.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result1.getResponse().trim());
+			
+			// Set Profile Information
+			ClientResponse result2 = c.sendRequest("POST", mainPath + "user", "");
+			assertEquals(200, result2.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
+			
+			ClientResponse result3 = c.sendRequest("GET", mainPath + "user", "");
+			assertEquals(200, result3.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result3.getResponse().trim());
+			
+			ClientResponse result4 = c.sendRequest("GET", mainPath + "user/abel", "");
+			assertEquals(200, result4.getHttpCode());
+			System.out.println("Result of 'testRMI': " + result4.getResponse().trim());
+			
+			
+			
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
