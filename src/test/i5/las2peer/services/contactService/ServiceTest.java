@@ -408,10 +408,13 @@ public class ServiceTest {
 
 		try {
 			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
-			ClientResponse result6 = c.sendRequest("GET", mainPath + "addressbook", "");
-			assertEquals(200, result6.getHttpCode());
-			System.out.println("Result of 'testAddressBook': " + result6.getResponse().trim());
+			ClientResponse result = c.sendRequest("GET", mainPath + "addressbook", "");
+			assertEquals(200, result.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result.getResponse().trim());
 
+			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "");
+			assertEquals(200, result2.getHttpCode());
+			System.out.println("Result of 'testAddressBook': " + result2.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
