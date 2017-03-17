@@ -458,55 +458,39 @@ public class ContactService extends RESTService {
 			String identifier = group_prefix + name;
 			String identifier2 = group_prefix;
 			GroupAgent groupAgent;
-
 			try {
-				Context.getCurrent().fetchEnvelope(identifier);
-				return Response.status(Status.BAD_REQUEST).entity("Group already exist").build();
-			} catch (ArtifactNotFoundException e) {
-				ContactContainer cc = new ContactContainer();
-				// try to create group
 				try {
+					Context.getCurrent().fetchEnvelope(identifier);
+					return Response.status(Status.BAD_REQUEST).entity("Group already exist").build();
+				} catch (ArtifactNotFoundException e) {
+					ContactContainer cc = new ContactContainer();
+					// try to create group
 					groupAgent = GroupAgent.createGroupAgent(members);
 					id = groupAgent.getId();
 					groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
 					Context.getCurrent().getLocalNode().storeAgent(groupAgent);
-				} catch (L2pSecurityException | CryptoException | SerializationException | AgentException e2) {
-					return Response.status(Status.BAD_REQUEST).entity("Error").build();
-				}
-				cc.addGroup(name, id);
-				try {
+
+					cc.addGroup(name, id);
 					env = Context.getCurrent().createEnvelope(identifier, cc, groupAgent);
 					service.storeEnvelope(env, groupAgent);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
-					logger.log(Level.SEVERE, "Unknown error!", e);
-					e1.printStackTrace();
 				}
-			} catch (Exception e) {
-				// write error to logfile and console
-				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
-				e.printStackTrace();
-				return Response.status(Status.BAD_REQUEST).entity("Error").build();
-			}
-			// writing to user
-			try {
-				// try to add group to group list
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier2);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				cc.addGroup(name, id);
-				env2 = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
-			} catch (ArtifactNotFoundException e) {
-				// create new group list
-				ContactContainer cc = new ContactContainer();
-				cc.addGroup(name, id);
+				// writing to user
 				try {
+					// try to add group to group list
+					Envelope stored = Context.getCurrent().fetchEnvelope(identifier2);
+					ContactContainer cc = (ContactContainer) stored.getContent();
+					cc.addGroup(name, id);
+					env2 = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
+				} catch (ArtifactNotFoundException e) {
+					// create new group list
+					ContactContainer cc = new ContactContainer();
+					cc.addGroup(name, id);
 					env2 = Context.getCurrent().createUnencryptedEnvelope(identifier2, cc);
-				} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
-					logger.log(Level.SEVERE, "Unknown error!", e);
-					e1.printStackTrace();
-					return Response.status(Status.BAD_REQUEST).entity("Error").build();
 				}
+			} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
+				logger.log(Level.SEVERE, "Unknown error!", e1);
+				e1.printStackTrace();
+				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
