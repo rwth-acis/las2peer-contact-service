@@ -12,7 +12,6 @@
         <dependency org="i5" name="las2peer" rev="0.6.7" changing="true" conf="platform->*" />
         <dependency org="i5" name="las2peer-web-connector" rev="0.6.7" changing="true" conf="platform->*" />
         <dependency org="junit" name="junit" rev="4.12" conf="platform->default" />
-        <dependency org="net.minidev" name="json-smart" rev="1.3.1" conf="platform->default" />
 		<dependency org="org.jacoco" name="org.jacoco.ant" rev="0.7.2.201409121644" conf="platform->default" />
         <!-- Add service dependencies here. Don't forget to add all libraries to /etc/ant_configuration/service.properties -->
 		<!-- example:
