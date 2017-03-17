@@ -48,9 +48,45 @@ import net.minidev.json.parser.JSONParser;
 /**
  * las2peer Contact Service
  * 
- * This service can manage your las2peer contacts and groups It uses the las2peer Web-Connector for RESTful access to
- * it.
+ * This service can manage your las2peer contacts and groups. It uses the las2peer Web-Connector for RESTful access to
+ * it. The service has the following features:
  * 
+ * <p>
+ * ContactResource:
+ * <ul>
+ * <li>Gets all your contacts
+ * <li>Adds/Removes a contact
+ * </ul>
+ * <p>
+ * GroupResource:
+ * <ul>
+ * <li>Gets all your groups
+ * <li>Adds/Removes a group
+ * <li>Gets all member of a group
+ * <li>Adds a user to a group
+ * <li>Removes a user from a group
+ * </ul>
+ * <p>
+ * AddressBookResource:
+ * <ul>
+ * <li>Adds you to the address book
+ * <li>Removes you from the address book
+ * <li>Gets all users from the address book
+ * </ul>
+ * UserResource:
+ * <ul>
+ * <li>Updates your user information
+ * <li>Gets your or a users user information
+ * </ul>
+ * PermissionResource:
+ * <ul>
+ * <li>Gets a user's permission settings
+ * <li>Sets your permission settings
+ * </ul>
+ * 
+ * 
+ * @author Alexander Neumann
+ * @version 0.1
  */
 @ServicePath("contactservice")
 public class ContactService extends RESTService {
@@ -98,8 +134,13 @@ public class ContactService extends RESTService {
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class ContactResource {
 		ContactService service = (ContactService) Context.getCurrent().getService();
-		
-		// put here all your service methods
+
+		/**
+		 * Get all your contacts from the storage.
+		 * 
+		 * @return Returns a JSON string with a list of your contacts { id:name }.
+		 * @since 0.1
+		 */
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
@@ -150,6 +191,7 @@ public class ContactService extends RESTService {
 		 * 
 		 * @param name Login name of the contact you want to add
 		 * @return Returns a Response
+		 * @since 0.1
 		 */
 		@POST
 		@Path("{name}")
@@ -216,6 +258,7 @@ public class ContactService extends RESTService {
 		 * 
 		 * @param name Login name of the contact you want to delete
 		 * @return Returns a Response whether the contact was deleted or not.
+		 * @since 0.1
 		 */
 		@DELETE
 		@Path("{name}")
@@ -265,7 +308,7 @@ public class ContactService extends RESTService {
 				return Response.status(Status.NOT_FOUND).entity("User is not one of your contacts.").build();
 		}
 	}
-	
+
 	@Path("/groups") // this is the root resource
 	@Api(
 			value = "Group Resource")
@@ -289,6 +332,7 @@ public class ContactService extends RESTService {
 		 * Retrieve a list of all your groups.
 		 * 
 		 * @return Returns a Response containing a list of your groups
+		 * @since 0.1
 		 */
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
@@ -346,6 +390,7 @@ public class ContactService extends RESTService {
 		 * 
 		 * @param name Name of your group
 		 * @return Returns a Response
+		 * @since 0.1
 		 * 
 		 */
 		@GET
@@ -387,6 +432,7 @@ public class ContactService extends RESTService {
 		 * 
 		 * @param name Name of your group
 		 * @return Returns a Response whether the group could be added or not.
+		 * @since 0.1
 		 * 
 		 */
 		@POST
@@ -478,6 +524,7 @@ public class ContactService extends RESTService {
 		 * 
 		 * @param name Name of the group you want to delete.
 		 * @return Returns a Response whether the group could be deleted or not.
+		 * @since 0.1
 		 */
 		@DELETE
 		@Path("/{name}")
@@ -521,6 +568,7 @@ public class ContactService extends RESTService {
 		 * 
 		 * @param name Name of the group.
 		 * @return Returns a Response with the list of all members.
+		 * @since 0.1
 		 */
 		@GET
 		@Path("/{name}/member")
@@ -565,6 +613,7 @@ public class ContactService extends RESTService {
 		 * @param groupName Name of the group.
 		 * @param userName Name of the user.
 		 * @return Returns a Response
+		 * @since 0.1
 		 */
 		@POST
 		@Path("/{name}/member/{user}")
@@ -628,6 +677,7 @@ public class ContactService extends RESTService {
 		 * @param groupName Name of the group
 		 * @param userName Name of the user
 		 * @return Returns a Response
+		 * @since 0.1
 		 */
 		@DELETE
 		@Path("/{name}/member/{user}")
@@ -681,8 +731,7 @@ public class ContactService extends RESTService {
 			return Response.status(Status.OK).entity("Removed from group.").build();
 		}
 	}
-	
-	
+
 	@Path("/addressbook") // this is the root resource
 	@Api(
 			value = "Address Book Resource")
@@ -702,6 +751,12 @@ public class ContactService extends RESTService {
 	public static class AddressBookResource {
 		ContactService service = (ContactService) Context.getCurrent().getService();
 
+		/**
+		 * Function to add yourself to the address book.
+		 * 
+		 * @return Returns the result of the request.
+		 * @since 0.1
+		 */
 		@POST
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
@@ -744,6 +799,12 @@ public class ContactService extends RESTService {
 				return Response.status(Status.BAD_REQUEST).entity("Already in list.").build();
 		}
 
+		/**
+		 * Function to remove yourself from the address book.
+		 * 
+		 * @return Returns the result of the request.
+		 * @since 0.1
+		 */
 		@DELETE
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
@@ -787,6 +848,12 @@ public class ContactService extends RESTService {
 			}
 		}
 
+		/**
+		 * Function to get the address book.
+		 * 
+		 * @return Returns a JSON string containing users (id:name).
+		 * @since 0.1
+		 */
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiOperation(
@@ -834,7 +901,7 @@ public class ContactService extends RESTService {
 			return Response.status(Status.BAD_REQUEST).entity("Could not get any contacts.").build();
 		}
 	}
-	
+
 	@Path("/user") // this is the root resource
 	@Api(
 			value = "User Resource")
@@ -853,11 +920,14 @@ public class ContactService extends RESTService {
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class UserResource {
 		ContactService service = (ContactService) Context.getCurrent().getService();
-	
-		// //////////////////////////////////////////////////////////////////////////////////////
-		// RMI Calls
-		// //////////////////////////////////////////////////////////////////////////////////////
 
+		/**
+		 * Function to set your information.
+		 * 
+		 * @param content A JSON string containing firstName, lastName and the userImage.
+		 * @return Response of the request.
+		 * @since 0.1
+		 */
 		@POST
 		@Produces(MediaType.APPLICATION_JSON)
 		@ApiResponses(
@@ -893,6 +963,12 @@ public class ContactService extends RESTService {
 			return Response.status(Status.OK).build();
 		}
 
+		/**
+		 * Function to get the information of a user.
+		 * 
+		 * @return Returns a JSON string containing firstName, lastName and the userImage.
+		 * @since 0.1
+		 */
 		@GET
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
@@ -926,6 +1002,14 @@ public class ContactService extends RESTService {
 			return Response.status(Status.OK).entity(returnString).build();
 		}
 
+		/**
+		 * Function to get the information of a user.
+		 * 
+		 * @param name The name of the requested user.
+		 * @return Returns a JSON string containing firstName, lastName and the userImage depending on the permission
+		 *         set to this values.
+		 * @since 0.1
+		 */
 		@GET
 		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
@@ -960,7 +1044,7 @@ public class ContactService extends RESTService {
 			return Response.status(Status.OK).entity(returnString).build();
 		}
 	}
-	
+
 	@Path("/permission") // this is the root resource
 	@Api(
 			value = "Permission Resource")
@@ -979,7 +1063,13 @@ public class ContactService extends RESTService {
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class PermissionResource {
 		ContactService service = (ContactService) Context.getCurrent().getService();
-		
+
+		/**
+		 * Function to get the user's permission setting
+		 * 
+		 * @return Returns a JSON string containing boolean values for firstName, lastName and the userImage.
+		 * @since 0.1
+		 */
 		@GET
 		@Produces(MediaType.TEXT_PLAIN)
 		@ApiOperation(
@@ -1018,10 +1108,11 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Updates the user information (firstName, lastName, userImage)
+		 * Updates the user's permission setting (firstName, lastName, userImage)
 		 * 
-		 * @param content JSON string containing the firstName, lastName and the userImage.
+		 * @param content JSON string containing boolean values for firstName, lastName and the userImage.
 		 * @return Response
+		 * @since 0.1
 		 */
 		@POST
 		@Produces(MediaType.APPLICATION_JSON)
@@ -1057,10 +1148,11 @@ public class ContactService extends RESTService {
 			return Response.status(Status.OK).entity("").build();
 		}
 	}
-	
+
 	@Path("/name") // this is the root resource
 	public static class NameResource {
 		ContactService service = (ContactService) Context.getCurrent().getService();
+
 		/**
 		 * Function to get the login name of an agent
 		 * 
@@ -1070,7 +1162,7 @@ public class ContactService extends RESTService {
 		@GET
 		@Path("/{id}")
 		public Response getName(@PathParam("id") String id) {
-	
+
 			long agentid = Long.parseLong(id);
 			try {
 				UserAgent user = (UserAgent) Context.getCurrent().getAgent(agentid);
@@ -1082,11 +1174,16 @@ public class ContactService extends RESTService {
 			}
 		}
 	}
-	
+
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// RMI Calls
+	// //////////////////////////////////////////////////////////////////////////////////////
+
 	/**
 	 * Envelope helper method for storing an envelope.
 	 * 
 	 * @param env Envelope.
+	 * @since 0.1
 	 */
 	private void storeEnvelope(Envelope env) {
 		try {
@@ -1102,6 +1199,7 @@ public class ContactService extends RESTService {
 	 * 
 	 * @param env Envelope.
 	 * @param owner Agent who owns the envelope.
+	 * @since 0.1
 	 */
 	private void storeEnvelope(Envelope env, Agent owner) {
 		try {
