@@ -229,6 +229,32 @@ public class ServiceTest {
 			assertEquals(200, result4.getHttpCode());
 			assertTrue(result4.getResponse().trim().contains("{}"));
 			System.out.println("Result of 'testGetContacts': " + result4.getResponse().trim());
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+
+	@Test
+	public void testGetContactsWithUnknownAgent() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
+			agentAdam.unlock(passAdam);
+			String identifier = testService.getServiceNameVersion().getName() + "$" + "contacts_"
+					+ agentAdam.getIdentifier();
+			ContactContainer cc = new ContactContainer();
+			cc.addContact("1337");
+			createEnvelopeWithContent(identifier, agentAdam, cc);
+
+			ClientResponse result = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(200, result.getHttpCode());
+			assertTrue(result.getResponse().trim().contains("{}"));
+			System.out.println("Result of 'testGetContactsWithUnknownAgent': " + result.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
@@ -243,7 +269,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
-			// Add a contact
+			// Add a group
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
@@ -274,6 +300,11 @@ public class ServiceTest {
 
 			ClientResponse result4 = c.sendRequest("GET", mainPath + "groups", "");
 			assertEquals(200, result4.getHttpCode());
+			assertTrue(result4.getResponse().contains("{}"));
+			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
+
+			result4 = c.sendRequest("GET", mainPath + "groups/testGroup", "");
+			assertEquals(400, result4.getHttpCode());
 			assertTrue(result4.getResponse().contains("{}"));
 			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
 
@@ -333,6 +364,24 @@ public class ServiceTest {
 			assertEquals(404, result9.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+
+	@Test
+	public void testBlockGroups() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
+			agentEve.unlock(passEve);
+			String identifier = "groups_testGroup";
+			createEnvelope(identifier, agentEve);
+			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
+			assertEquals(400, result.getHttpCode());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
@@ -606,4 +655,16 @@ public class ServiceTest {
 		}
 	}
 
+	// helper method
+	public void createEnvelopeWithContent(String identifier, AgentImpl owner, ContactContainer cc) {
+		try {
+			EnvelopeVersion env = node.createEnvelope(testService.getServiceNameVersion().getName() + "$" + identifier,
+					owner.getPublicKey(), cc, owner);
+			node.storeEnvelope(env, owner);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			fail("Could not create Envelope.\n" + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 }

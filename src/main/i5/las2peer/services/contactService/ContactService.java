@@ -163,7 +163,7 @@ public class ContactService extends RESTService {
 					for (String l : userList) {
 						try {
 							user = (UserAgent) Context.get().fetchAgent(l);
-							result.put("" + user.getIdentifier(), user.getLoginName());
+							result.put(user.getIdentifier(), user.getLoginName());
 						} catch (AgentNotFoundException e1) {
 							// Skip unknown agents.
 						}
@@ -172,7 +172,7 @@ public class ContactService extends RESTService {
 					ContactContainer cc = new ContactContainer();
 					Envelope env = Context.get().createEnvelope(identifier, owner);
 					env.setContent(cc);
-					service.storeEnvelope(env);
+					Context.get().storeEnvelope(env, owner);
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -355,9 +355,7 @@ public class ContactService extends RESTService {
 						try {
 							groupId = cc.getGroupId(s);
 							group = (GroupAgent) Context.get().requestAgent(groupId);
-							if (group.hasMember(member)) {
-								result.put(groupId, s);
-							}
+							result.put(groupId, s);
 						} catch (Exception e) {
 							// Skip agents who are not known or groups wihtout access.
 						}
@@ -529,13 +527,12 @@ public class ContactService extends RESTService {
 				GroupAgent ga = (GroupAgent) Context.get().requestAgent(groupID);
 				ga.revokeMember(Context.get().getMainAgent());
 				Context.get().storeAgent(ga);
-				service.storeEnvelope(env);
+				Context.get().storeEnvelope(env);
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			service.storeEnvelope(env);
 			return Response.status(Status.OK).build();
 		}
 
@@ -1127,21 +1124,6 @@ public class ContactService extends RESTService {
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// RMI Calls
 	// //////////////////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * Envelope helper method for storing an envelope.
-	 * 
-	 * @param env Envelope.
-	 * @since 0.1
-	 */
-	private void storeEnvelope(Envelope env) {
-		try {
-			Context.get().storeEnvelope(env);
-		} catch (EnvelopeException e) {
-
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * Envelope helper method for storing an envelope.
