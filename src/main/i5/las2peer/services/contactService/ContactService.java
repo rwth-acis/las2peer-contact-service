@@ -341,7 +341,6 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Storage problems.") })
 		public Response getGroups() {
-			Agent member = Context.get().getMainAgent();
 			String identifier = group_prefix;
 			JSONObject result = new JSONObject();
 			try {
@@ -349,12 +348,11 @@ public class ContactService extends RESTService {
 					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
 					ContactContainer cc = (ContactContainer) stored.getContent();
 					Set<String> groupNames = cc.getGroups().keySet();
-					GroupAgent group = null;
 					String groupId = "";
 					for (String s : groupNames) {
 						try {
 							groupId = cc.getGroupId(s);
-							group = (GroupAgent) Context.get().requestAgent(groupId);
+							Context.get().requestAgent(groupId);
 							result.put(groupId, s);
 						} catch (Exception e) {
 							// Skip agents who are not known or groups wihtout access.
@@ -660,23 +658,22 @@ public class ContactService extends RESTService {
 				String identifier = group_prefix + groupName;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
-				groupAgent = (GroupAgent) Context.get().requestAgent(cc.getGroups().get(groupName));
-				groupAgent.unlock(Context.get().getMainAgent());
+				try {
+					groupAgent = (GroupAgent) Context.get().requestAgent(cc.getGroups().get(groupName));
+				} catch (AgentException e) {
+					// Agent not found?
+					e.printStackTrace();
+					return Response.status(Status.NOT_FOUND).entity("GroupAgent not found.").build();
+				}
 				String addID = Context.get().getUserAgentIdentifierByLoginName(userName);
 				groupAgent.revokeMember(Context.get().fetchAgent(addID));
-				env.setContent(cc);
+				service.storeEnvelope(env, groupAgent);
+
+				Context.get().storeAgent(groupAgent);
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't remove member!", e);
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
-			}
-			service.storeEnvelope(env, groupAgent);
-			try {
-				Context.get().storeAgent(groupAgent);
-			} catch (AgentException e) {
-				// Agent not found?
-				e.printStackTrace();
-				return Response.status(Status.NOT_FOUND).entity("GroupAgent not found.").build();
 			}
 			return Response.status(Status.OK).entity("Removed from group.").build();
 		}

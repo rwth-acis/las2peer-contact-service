@@ -244,8 +244,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentAdam.unlock(passAdam);
-			String identifier = testService.getServiceNameVersion().getName() + "$" + "contacts_"
-					+ agentAdam.getIdentifier();
+			String identifier = "contacts_" + agentAdam.getIdentifier();
 			ContactContainer cc = new ContactContainer();
 			cc.addContact("1337");
 			createEnvelopeWithContent(identifier, agentAdam, cc);
@@ -382,6 +381,26 @@ public class ServiceTest {
 			createEnvelope(identifier, agentEve);
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(400, result.getHttpCode());
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+
+	@Test
+	public void testRemoveGroupMember() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
+			agentAdam.unlock(passAdam);
+			String identifier = "groups_testGroup";
+			ContactContainer cc = new ContactContainer();
+			cc.addGroup("testGroup", "1337");
+			createEnvelopeWithContent(identifier, agentAdam, cc);
+			ClientResponse result = c.sendRequest("DELETE", mainPath + "groups/testGroup/member/adam", "");
+			assertEquals(404, result.getHttpCode());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
