@@ -1,8 +1,8 @@
 package i5.las2peer.services.contactService;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * This is an example object used to persist some data (in this case a simple String) to the network storage. It can be
@@ -13,41 +13,40 @@ public class ContactContainer implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private HashSet<Long> userList;
-	private HashMap<String, Long> groups;
+	private HashSet<String> userList;
+	private HashMap<String, String> groups;
 
 	public ContactContainer() {
-		userList = new HashSet<Long>();
-		groups = new HashMap<String, Long>();
+		userList = new HashSet<String>();
+		groups = new HashMap<String, String>();
 	}
 
-	public boolean addContact(Long id) {
+	public boolean addContact(String id) {
 		return userList.add(id);
 	}
 
-	public void addGroup(String name, Long id) {
+	public void addGroup(String name, String id) {
 		groups.put(name, id);
 	}
-	
-	public HashSet<Long> getUserList(){
+
+	public HashSet<String> getUserList() {
 		return userList;
 	}
-	
-	public boolean removeContact(Long id){
+
+	public boolean removeContact(String id) {
 		return userList.remove(id);
 	}
-	
-	public HashMap<String,Long> getGroups(){
+
+	public HashMap<String, String> getGroups() {
 		return groups;
 	}
-	
-	public Long getGroupId(String name){
+
+	public String getGroupId(String name) {
 		return groups.get(name);
 	}
-	
-	public void removeGroup(Long id){
-		groups.remove(id);
+
+	public void removeGroup(String name) {
+		groups.remove(name);
 	}
-	
 
 }

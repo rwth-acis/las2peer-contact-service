@@ -18,22 +18,18 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import i5.las2peer.api.Context;
-import i5.las2peer.api.exceptions.ArtifactNotFoundException;
-import i5.las2peer.api.exceptions.StorageException;
+import i5.las2peer.api.ManualDeployment;
+import i5.las2peer.api.persistency.Envelope;
+import i5.las2peer.api.persistency.EnvelopeException;
+import i5.las2peer.api.persistency.EnvelopeNotFoundException;
+import i5.las2peer.api.security.Agent;
+import i5.las2peer.api.security.AgentException;
+import i5.las2peer.api.security.AgentNotFoundException;
+import i5.las2peer.api.security.GroupAgent;
+import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.logging.L2pLogger;
-import i5.las2peer.logging.NodeObserver.Event;
-import i5.las2peer.p2p.AgentAlreadyRegisteredException;
-import i5.las2peer.p2p.AgentNotKnownException;
-import i5.las2peer.persistency.Envelope;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
-import i5.las2peer.security.Agent;
-import i5.las2peer.security.AgentException;
-import i5.las2peer.security.GroupAgent;
-import i5.las2peer.security.L2pSecurityException;
-import i5.las2peer.security.UserAgent;
-import i5.las2peer.tools.CryptoException;
-import i5.las2peer.tools.SerializationException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -89,6 +85,7 @@ import net.minidev.json.parser.JSONParser;
  * @version 0.1
  */
 @ServicePath("contactservice")
+@ManualDeployment
 public class ContactService extends RESTService {
 
 	// instantiate the logger class
@@ -133,7 +130,7 @@ public class ContactService extends RESTService {
 							name = "ACIS License (BSD3)",
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class ContactResource {
-		ContactService service = (ContactService) Context.getCurrent().getService();
+		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Get all your contacts from the storage.
@@ -154,33 +151,33 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Storage problems.") })
 		public Response getContacts() {
-			Agent owner = Context.getCurrent().getMainAgent();
-			String identifier = contact_prefix + owner.getId();
+			Agent owner = Context.get().getMainAgent();
+			String identifier = contact_prefix + owner.getIdentifier();
 			JSONObject result = new JSONObject();
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					Envelope stored = Context.get().requestEnvelope(identifier, owner);
 					ContactContainer cc = (ContactContainer) stored.getContent();
-					HashSet<Long> userList = cc.getUserList();
+					HashSet<String> userList = cc.getUserList();
 					UserAgent user;
-					for (Long l : userList) {
+					for (String l : userList) {
 						try {
-							user = (UserAgent) Context.getCurrent().getAgent(l);
-							result.put("" + user.getId(), user.getLoginName());
-						} catch (AgentNotKnownException e1) {
+							user = (UserAgent) Context.get().fetchAgent(l);
+							result.put(user.getIdentifier(), user.getLoginName());
+						} catch (AgentNotFoundException e1) {
 							// Skip unknown agents.
 						}
 					}
-				} catch (ArtifactNotFoundException e) {
+				} catch (EnvelopeNotFoundException e) {
 					ContactContainer cc = new ContactContainer();
-					Envelope env = Context.getCurrent().createEnvelope(identifier, cc);
-					service.storeEnvelope(env);
+					Envelope env = Context.get().createEnvelope(identifier, owner);
+					env.setContent(cc);
+					Context.get().storeEnvelope(env, owner);
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Unknown Error occured!", e);
 				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity(e.toString()).build();
 			}
 			return Response.status(Status.OK).entity(result).build();
@@ -211,41 +208,38 @@ public class ContactService extends RESTService {
 								message = "Agent does not exist.") })
 		public Response addContact(@PathParam("name") String name) {
 			// Setting owner and identifier for envelope
-			Agent owner = Context.getCurrent().getMainAgent();
-			String identifier = contact_prefix + owner.getId();
+			Agent owner = Context.get().getMainAgent();
+			String identifier = contact_prefix + owner.getIdentifier();
 			Envelope env = null;
 			boolean added = false;
-			long userID = -1;
+			String userID = "";
 
 			// try to fetch user you want to add
 			try {
-				userID = Context.getCurrent().getLocalNode().getAgentIdForLogin(name);
-			} catch (L2pSecurityException | AgentNotKnownException ex) {
+				userID = Context.get().getUserAgentIdentifierByLoginName(name);
+			} catch (AgentException ex) {
 				return Response.status(Status.NOT_FOUND).entity("Agent does not exist.").build();
 			}
 
 			// try to get envelope
+			ContactContainer cc = null;
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-					ContactContainer cc = (ContactContainer) stored.getContent();
-
-					added = cc.addContact(userID);
-					env = Context.getCurrent().createEnvelope(stored, cc);
-				} catch (ArtifactNotFoundException e) {
-					ContactContainer cc = new ContactContainer();
-					added = cc.addContact(userID);
-					env = Context.getCurrent().createEnvelope(identifier, cc);
+					env = Context.get().requestEnvelope(identifier);
+					cc = (ContactContainer) env.getContent();
+				} catch (EnvelopeNotFoundException e) {
+					cc = new ContactContainer();
+					env = Context.get().createEnvelope(identifier);
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Unknown error occured!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).build();
 			}
+			added = cc.addContact(userID);
+			env.setContent(cc);
 			// try to store envelope
-			service.storeEnvelope(env);
+			service.storeEnvelope(env, owner);
 
 			if (added)
 				return Response.status(Status.OK).entity("Contact added.").build();
@@ -277,31 +271,31 @@ public class ContactService extends RESTService {
 				value = "Remove Contact",
 				notes = "Removes a contact from your contact list.")
 		public Response removeContact(@PathParam("name") String name) {
-			Agent owner = Context.getCurrent().getMainAgent();
-			String identifier = contact_prefix + owner.getId();
+			Agent owner = Context.get().getMainAgent();
+			String identifier = contact_prefix + owner.getIdentifier();
 			Envelope env = null;
 			boolean deleted = false;
+			ContactContainer cc = null;
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-					ContactContainer cc = (ContactContainer) stored.getContent();
-					long userID = Context.getCurrent().getLocalNode().getAgentIdForLogin(name);
+					env = Context.get().requestEnvelope(identifier, owner);
+					cc = (ContactContainer) env.getContent();
+					String userID = Context.get().getUserAgentIdentifierByLoginName(name);
 					deleted = cc.removeContact(userID);
-					env = Context.getCurrent().createEnvelope(stored, cc);
-				} catch (ArtifactNotFoundException e) {
-					ContactContainer cc = new ContactContainer();
-					env = Context.getCurrent().createEnvelope(identifier, cc);
-				} catch (AgentNotKnownException ex) {
+				} catch (EnvelopeNotFoundException e) {
+					cc = new ContactContainer();
+					env = Context.get().createEnvelope(identifier, owner);
+				} catch (AgentException ex) {
 					return Response.status(Status.NOT_FOUND).entity("Agent does not exist").build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Could not delete Contact").build();
 			}
-			service.storeEnvelope(env);
+			env.setContent(cc);
+			service.storeEnvelope(env, owner);
 			if (deleted)
 				return Response.status(Status.OK).entity("Contact removed.").build();
 			else
@@ -326,7 +320,7 @@ public class ContactService extends RESTService {
 							name = "ACIS License (BSD3)",
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class GroupResource {
-		ContactService service = (ContactService) Context.getCurrent().getService();
+		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Retrieve a list of all your groups.
@@ -347,40 +341,36 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Storage problems.") })
 		public Response getGroups() {
-			Agent member = Context.getCurrent().getMainAgent();
 			String identifier = group_prefix;
 			JSONObject result = new JSONObject();
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
 					ContactContainer cc = (ContactContainer) stored.getContent();
 					Set<String> groupNames = cc.getGroups().keySet();
-					GroupAgent group = null;
-					long groupId = -1;
+					String groupId = "";
 					for (String s : groupNames) {
 						try {
 							groupId = cc.getGroupId(s);
-							group = Context.getCurrent().requestGroupAgent(groupId);
-							if (group.isMember(member)) {
-								result.put("" + groupId, s);
-							}
+							Context.get().requestAgent(groupId);
+							result.put(groupId, s);
 						} catch (Exception e) {
 							// Skip agents who are not known or groups wihtout access.
 						}
 					}
 					return Response.status(Status.OK).entity(result).build();
-				} catch (ArtifactNotFoundException e) {
+				} catch (EnvelopeNotFoundException e) {
 					ContactContainer cc = new ContactContainer();
 					Envelope env = null;
-					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-					service.storeEnvelope(env, Context.getCurrent().getServiceAgent());
+					env = Context.get().createEnvelope(identifier);
+					env.setPublic();
+					env.setContent(cc);
+					service.storeEnvelope(env, Context.get().getServiceAgent());
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 			}
 			return Response.status(Status.BAD_REQUEST).entity("Unknown error occured.").build();
 		}
@@ -409,21 +399,22 @@ public class ContactService extends RESTService {
 		public Response getGroup(@PathParam("name") String name) {
 			String identifier = group_prefix + name;
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
-				Long id = cc.getGroupId(name);
-
+				String id = cc.getGroupId(name);
+				if (id == null) {
+					return Response.status(Status.NOT_FOUND).entity("Group not found").build();
+				}
 				JSONObject result = new JSONObject();
-				result.put("" + id, name);
+				result.put(id, name);
 				return Response.status(Status.OK).entity(result).build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				e.printStackTrace();
 			}
-			return Response.status(Status.BAD_REQUEST).entity("Error while getting group id.").build();
+			return Response.status(Status.BAD_REQUEST).entity("{}").build();
 		}
 
 		/**
@@ -451,55 +442,51 @@ public class ContactService extends RESTService {
 		public Response addGroup(@PathParam("name") String name) {
 			// Setting owner group members
 			Agent[] members = new Agent[1];
-			members[0] = Context.getCurrent().getMainAgent();
+			members[0] = Context.get().getMainAgent();
 			Envelope env = null;
 			Envelope env2 = null;
-			long id = -1;
+			String id = "";
 			String identifier = group_prefix + name;
 			String identifier2 = group_prefix;
 			GroupAgent groupAgent;
+			ContactContainer cc = null;
 			try {
 				try {
-					Context.getCurrent().fetchEnvelope(identifier);
+					Context.get().requestEnvelope(identifier);
 					return Response.status(Status.BAD_REQUEST).entity("Group already exist").build();
-				} catch (ArtifactNotFoundException e) {
-					ContactContainer cc = new ContactContainer();
+				} catch (EnvelopeNotFoundException e) {
+					cc = new ContactContainer();
 					// try to create group
-					groupAgent = GroupAgent.createGroupAgent(members);
-					id = groupAgent.getId();
-					groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
-					Context.getCurrent().getLocalNode().storeAgent(groupAgent);
-
+					groupAgent = Context.get().createGroupAgent(members);
+					id = groupAgent.getIdentifier();
+					groupAgent.unlock(Context.get().getMainAgent());
+					Context.get().storeAgent(groupAgent);
 					cc.addGroup(name, id);
-					env = Context.getCurrent().createEnvelope(identifier, cc, groupAgent);
+					env = Context.get().createEnvelope(identifier, groupAgent);
+					env.setContent(cc);
 					service.storeEnvelope(env, groupAgent);
 				}
 				// writing to user
 				try {
 					// try to add group to group list
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier2);
-					ContactContainer cc = (ContactContainer) stored.getContent();
-					cc.addGroup(name, id);
-					env2 = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
-				} catch (ArtifactNotFoundException e) {
+					env2 = Context.get().requestEnvelope(identifier2, Context.get().getServiceAgent());
+					cc = (ContactContainer) env2.getContent();
+				} catch (EnvelopeNotFoundException e) {
 					// create new group list
-					ContactContainer cc = new ContactContainer();
-					cc.addGroup(name, id);
-					env2 = Context.getCurrent().createUnencryptedEnvelope(identifier2, cc);
+					cc = new ContactContainer();
+					env2 = Context.get().createEnvelope(identifier2, Context.get().getServiceAgent());
+					env2.setPublic();
 				}
-			} catch (IllegalArgumentException | SerializationException | CryptoException e1) {
-				logger.log(Level.SEVERE, "Unknown error!", e1);
-				e1.printStackTrace();
-				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				e.printStackTrace();
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			service.storeEnvelope(env2, Context.getCurrent().getServiceAgent());
+
+			cc.addGroup(name, id);
+			env2.setContent(cc);
+			service.storeEnvelope(env2, Context.get().getServiceAgent());
 			return Response.status(Status.OK).entity("" + id).build();
 		}
 
@@ -527,23 +514,23 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			try {
 				String identifier = group_prefix + name;
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				long groupID = cc.getGroups().get(name);
-				cc.removeGroup(groupID);
-				env = Context.getCurrent().createEnvelope(stored, cc);
-				GroupAgent ga = Context.getCurrent().requestGroupAgent(groupID);
-				ga.removeMember(Context.getCurrent().getMainAgent());
-				Context.getCurrent().getLocalNode().storeAgent(ga);
-				service.storeEnvelope(env);
+				env = Context.get().requestEnvelope(identifier);
+				ContactContainer cc = (ContactContainer) env.getContent();
+				String groupID = cc.getGroups().get(name);
+				if (groupID == null) {
+					return Response.status(Status.NOT_FOUND).entity("Group not found").build();
+				}
+				cc.removeGroup(name);
+				env.setContent(cc);
+				GroupAgent ga = (GroupAgent) Context.get().requestAgent(groupID);
+				ga.revokeMember(Context.get().getMainAgent());
+				Context.get().storeAgent(ga);
+				Context.get().storeEnvelope(env);
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			service.storeEnvelope(env);
 			return Response.status(Status.OK).build();
 		}
 
@@ -571,21 +558,19 @@ public class ContactService extends RESTService {
 			JSONObject result = new JSONObject();
 			String identifier = group_prefix + name;
 			try {
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
-				GroupAgent groupAgent = (GroupAgent) Context.getCurrent().getLocalNode()
-						.getAgent(cc.getGroups().get(name));
-				groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
-				Long[] memberIds = groupAgent.getMemberList();
+				GroupAgent groupAgent = (GroupAgent) Context.get()
+						.requestAgent(String.valueOf(cc.getGroups().get(name)));
+				groupAgent.unlock(Context.get().getMainAgent());
+				String[] memberIds = groupAgent.getMemberList();
 				for (int i = 0; i < memberIds.length; i++) {
-					UserAgent user = (UserAgent) Context.getCurrent().getAgent(memberIds[i]);
-					result.put("" + memberIds[i], user.getLoginName());
+					UserAgent user = (UserAgent) Context.get().fetchAgent(memberIds[i]);
+					result.put(memberIds[i], user.getLoginName());
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't get member names!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity(e.toString()).build();
 			}
 			return Response.status(Status.OK).entity(result).build();
@@ -617,42 +602,29 @@ public class ContactService extends RESTService {
 				notes = "Add a member to a group.")
 		public Response addGroupMember(@PathParam("name") String groupName, @PathParam("user") String userName) {
 			Envelope env = null;
-			long addID = -1;
+			String addID = "-1";
+			Agent test = null;
 			GroupAgent groupAgent = null;
 			try {
 				String identifier = group_prefix + groupName;
 				// Get envelope
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				groupAgent = Context.getCurrent().requestGroupAgent(cc.getGroups().get(groupName));
-				groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
-				addID = Context.getCurrent().getLocalNode().getAgentIdForLogin(userName);
-				groupAgent.addMember(Context.getCurrent().getAgent(addID));
-				env = Context.getCurrent().createEnvelope(stored, cc);
-			} catch (AgentNotKnownException e1) {
+				env = Context.get().requestEnvelope(identifier, Context.get().getMainAgent());
+				ContactContainer cc = (ContactContainer) env.getContent();
+				groupAgent = (GroupAgent) Context.get().requestAgent(cc.getGroups().get(groupName));
+				addID = Context.get().getUserAgentIdentifierByLoginName(userName);
+				test = Context.get().fetchAgent(addID);
+				groupAgent.addMember(test);
+				Context.get().storeAgent(groupAgent);
+				env.setContent(cc);
+			} catch (AgentException e1) {
 				return Response.status(Status.NOT_FOUND).entity("Agent not found.").build();
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't add member!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
 			service.storeEnvelope(env, groupAgent);
-			try {
-				Context.getCurrent().getLocalNode().updateAgent(groupAgent);
-			} catch (AgentAlreadyRegisteredException e) {
-				// Agent already registered.
-			} catch (L2pSecurityException | StorageException e) {
-				// Security Warning
-				e.printStackTrace();
-				return Response.status(Status.BAD_REQUEST).entity("Error").build();
-			} catch (AgentException e) {
-				// Agent not found?
-				e.printStackTrace();
-				return Response.status(Status.NOT_FOUND).entity("GroupAgent not found.").build();
-			}
-			return Response.status(Status.OK).entity("Added to gorup.").build();
+			return Response.status(Status.OK).entity("Added to group.").build();
 		}
 
 		/**
@@ -684,33 +656,24 @@ public class ContactService extends RESTService {
 			GroupAgent groupAgent = null;
 			try {
 				String identifier = group_prefix + groupName;
-				Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-				ContactContainer cc = (ContactContainer) stored.getContent();
-				groupAgent = Context.getCurrent().requestGroupAgent(cc.getGroups().get(groupName));
-				groupAgent.unlockPrivateKey(Context.getCurrent().getMainAgent());
-				long addID = Context.getCurrent().getLocalNode().getAgentIdForLogin(userName);
-				groupAgent.removeMember(Context.getCurrent().getAgent(addID));
-				env = Context.getCurrent().createEnvelope(stored, cc);
+				env = Context.get().requestEnvelope(identifier);
+				ContactContainer cc = (ContactContainer) env.getContent();
+				try {
+					groupAgent = (GroupAgent) Context.get().requestAgent(cc.getGroups().get(groupName));
+				} catch (AgentException e) {
+					// Agent not found?
+					e.printStackTrace();
+					return Response.status(Status.NOT_FOUND).entity("GroupAgent not found.").build();
+				}
+				String addID = Context.get().getUserAgentIdentifierByLoginName(userName);
+				groupAgent.revokeMember(Context.get().fetchAgent(addID));
+				service.storeEnvelope(env, groupAgent);
+
+				Context.get().storeAgent(groupAgent);
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't remove member!", e);
-				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
-			}
-			service.storeEnvelope(env, groupAgent);
-			try {
-				Context.getCurrent().getLocalNode().storeAgent(groupAgent);
-			} catch (AgentAlreadyRegisteredException e) {
-				// Agent already registered.
-			} catch (L2pSecurityException e) {
-				// Security Warning
-				e.printStackTrace();
-				return Response.status(Status.BAD_REQUEST).entity("Error").build();
-			} catch (AgentException e) {
-				// Agent not found?
-				e.printStackTrace();
-				return Response.status(Status.NOT_FOUND).entity("GroupAgent not found.").build();
 			}
 			return Response.status(Status.OK).entity("Removed from group.").build();
 		}
@@ -733,7 +696,7 @@ public class ContactService extends RESTService {
 							name = "ACIS License (BSD3)",
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class AddressBookResource {
-		ContactService service = (ContactService) Context.getCurrent().getService();
+		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Function to add yourself to the address book.
@@ -754,29 +717,31 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Storage problems or already in list.") })
 		public Response addToAddressBook() {
-			Agent owner = Context.getCurrent().getMainAgent();
+			Agent owner = Context.get().getMainAgent();
 			String identifier = address_prefix;
 			Envelope env = null;
 			boolean added = false;
+			ContactContainer cc = null;
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-					ContactContainer cc = (ContactContainer) stored.getContent();
-					added = cc.addContact(owner.getId());
-					env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
-				} catch (ArtifactNotFoundException ex) {
-					ContactContainer cc = new ContactContainer();
-					added = cc.addContact(owner.getId());
-					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
+					env = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					cc = (ContactContainer) env.getContent();
+					added = cc.addContact(owner.getIdentifier());
+				} catch (EnvelopeNotFoundException ex) {
+					cc = new ContactContainer();
+					added = cc.addContact(owner.getIdentifier());
+					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env.setPublic();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Error").build();
 			}
-			service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
+
+			env.setContent(cc);
+			service.storeEnvelope(env, Context.get().getServiceAgent());
 			if (added)
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
 			else
@@ -804,30 +769,31 @@ public class ContactService extends RESTService {
 		public Response removeFromAddressBook() {
 			String identifier = address_prefix;
 			Envelope env = null;
+			ContactContainer cc = null;
 			boolean deleted = false;
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
-					ContactContainer cc = (ContactContainer) stored.getContent();
-					long userID = Context.getCurrent().getMainAgent().getId();
+					env = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					cc = (ContactContainer) env.getContent();
+					String userID = Context.get().getMainAgent().getIdentifier();
 					deleted = cc.removeContact(userID);
-					env = Context.getCurrent().createUnencryptedEnvelope(stored, cc);
-				} catch (ArtifactNotFoundException ex) {
-					ContactContainer cc = new ContactContainer();
-					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
+				} catch (EnvelopeNotFoundException ex) {
+					cc = new ContactContainer();
+					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env.setPublic();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("Could not be removed from list.").build();
 			}
+
+			env.setContent(cc);
+			service.storeEnvelope(env, Context.get().getServiceAgent());
 			if (deleted) {
-				service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
-				service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
 				return Response.status(Status.NOT_FOUND).entity("You were not in the list.").build();
 			}
 		}
@@ -855,32 +821,33 @@ public class ContactService extends RESTService {
 			JSONObject result = new JSONObject();
 			try {
 				try {
-					Envelope stored = Context.getCurrent().fetchEnvelope(identifier);
+					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
 					ContactContainer cc = (ContactContainer) stored.getContent();
-					HashSet<Long> list = cc.getUserList();
+					HashSet<String> list = cc.getUserList();
 					UserAgent user;
-					for (Long l : list) {
+					for (String l : list) {
 						try {
-							user = (UserAgent) Context.getCurrent().getAgent(l);
-							result.put("" + user.getId(), user.getLoginName());
-						} catch (AgentNotKnownException e1) {
+							user = (UserAgent) Context.get().fetchAgent(l);
+							result.put(user.getIdentifier(), user.getLoginName());
+						} catch (AgentException e1) {
 							// Skip unknown agents
 							e1.printStackTrace();
 						}
 					}
 					return Response.status(Status.OK).entity(result).build();
-				} catch (ArtifactNotFoundException ex) {
+				} catch (EnvelopeNotFoundException ex) {
 					Envelope env = null;
 					ContactContainer cc = new ContactContainer();
-					env = Context.getCurrent().createUnencryptedEnvelope(identifier, cc);
-					service.storeEnvelope(env, Context.getCurrent().getLocalNode().getAnonymous());
+					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env.setPublic();
+					env.setContent(cc);
+					service.storeEnvelope(env, Context.get().getServiceAgent());
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
 				// create and publish a monitoring message
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 			}
 			return Response.status(Status.BAD_REQUEST).entity("Could not get any contacts.").build();
 		}
@@ -903,7 +870,7 @@ public class ContactService extends RESTService {
 							name = "ACIS License (BSD3)",
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class UserResource {
-		ContactService service = (ContactService) Context.getCurrent().getService();
+		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Function to set your information.
@@ -933,7 +900,7 @@ public class ContactService extends RESTService {
 				m.put("lastName", (String) params.get("lastName"));
 				m.put("userImage", (String) params.get("userImage"));
 				// RMI call without parameters
-				Object result = Context.getCurrent().invoke(
+				Object result = Context.get().invoke(
 						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "set",
 						new Serializable[] { m });
 				if (result != null) {
@@ -941,7 +908,6 @@ public class ContactService extends RESTService {
 				}
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).build();
@@ -970,9 +936,9 @@ public class ContactService extends RESTService {
 			try {
 				// RMI call without parameters
 				String[] fields = { "firstName", "lastName", "userImage" };
-				Object result = Context.getCurrent().invoke(
+				Object result = Context.get().invoke(
 						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "get",
-						new Serializable[] { Context.getCurrent().getMainAgent().getId(), fields });
+						new Serializable[] { Context.get().getMainAgent().getIdentifier(), fields });
 				if (result != null) {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
@@ -980,7 +946,6 @@ public class ContactService extends RESTService {
 				}
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
@@ -1012,9 +977,9 @@ public class ContactService extends RESTService {
 			try {
 				// RMI call without parameters
 				String[] fields = { "firstName", "lastName", "userImage" };
-				Object result = Context.getCurrent().invoke(
+				Object result = Context.get().invoke(
 						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "get",
-						new Serializable[] { Context.getCurrent().getLocalNode().getAgentIdForLogin(name), fields });
+						new Serializable[] { Context.get().getUserAgentIdentifierByLoginName(name), fields });
 				if (result != null) {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
@@ -1022,7 +987,6 @@ public class ContactService extends RESTService {
 				}
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
@@ -1046,7 +1010,7 @@ public class ContactService extends RESTService {
 							name = "ACIS License (BSD3)",
 							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class PermissionResource {
-		ContactService service = (ContactService) Context.getCurrent().getService();
+		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Function to get the user's permission setting
@@ -1071,13 +1035,12 @@ public class ContactService extends RESTService {
 			try {
 				// RMI call
 				String[] fields = { "firstName", "lastName", "userImage" };
-				Object result = Context.getCurrent().invoke(
+				Object result = Context.get().invoke(
 						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "getPermissions",
 						new Serializable[] { fields });
 				if (result != null) {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
-					System.out.println(hashMap.toString());
 					returnString = hashMap.toString();
 				} else {
 					return Response.status(Status.BAD_REQUEST).entity("Setting permissions failed").build();
@@ -1085,7 +1048,6 @@ public class ContactService extends RESTService {
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
 				e.printStackTrace();
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
@@ -1119,14 +1081,13 @@ public class ContactService extends RESTService {
 				m.put("lastName", (Boolean) params.get("lastName"));
 				m.put("userImage", (Boolean) params.get("userImage"));
 				// RMI call without parameters
-				Object result = Context.getCurrent().invoke(
+				Object result = Context.get().invoke(
 						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "setPermissions", m);
 				if (result != null) {
 					System.out.println("setting permission: " + ((Boolean) result));
 				}
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
-				L2pLogger.logEvent(this, Event.SERVICE_ERROR, e.toString());
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity("").build();
@@ -1135,7 +1096,7 @@ public class ContactService extends RESTService {
 
 	@Path("/name") // this is the root resource
 	public static class NameResource {
-		ContactService service = (ContactService) Context.getCurrent().getService();
+		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Function to get the login name of an agent
@@ -1146,13 +1107,11 @@ public class ContactService extends RESTService {
 		@GET
 		@Path("/{id}")
 		public Response getName(@PathParam("id") String id) {
-
-			long agentid = Long.parseLong(id);
 			try {
-				UserAgent user = (UserAgent) Context.getCurrent().getAgent(agentid);
+				UserAgent user = (UserAgent) Context.get().fetchAgent(id);
 				String name = user.getLoginName();
 				return Response.status(Status.OK).entity(name).build();
-			} catch (AgentNotKnownException e) {
+			} catch (AgentException e) {
 				String error = "Agent not found";
 				return Response.status(Status.NOT_FOUND).entity(error).build();
 			}
@@ -1167,29 +1126,13 @@ public class ContactService extends RESTService {
 	 * Envelope helper method for storing an envelope.
 	 * 
 	 * @param env Envelope.
-	 * @since 0.1
-	 */
-	private void storeEnvelope(Envelope env) {
-		try {
-			Context.getCurrent().storeEnvelope(env);
-		} catch (StorageException e) {
-
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Envelope helper method for storing an envelope.
-	 * 
-	 * @param env Envelope.
 	 * @param owner Agent who owns the envelope.
 	 * @since 0.1
 	 */
 	private void storeEnvelope(Envelope env, Agent owner) {
 		try {
-			Context.getCurrent().storeEnvelope(env, owner);
-		} catch (StorageException e) {
-
+			Context.get().storeEnvelope(env, owner);
+		} catch (EnvelopeException e) {
 			e.printStackTrace();
 		}
 	}

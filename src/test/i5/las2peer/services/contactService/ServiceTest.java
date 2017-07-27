@@ -13,18 +13,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import i5.las2peer.api.p2p.ServiceNameVersion;
+import i5.las2peer.connectors.webConnector.WebConnector;
+import i5.las2peer.connectors.webConnector.client.ClientResponse;
+import i5.las2peer.connectors.webConnector.client.MiniClient;
 import i5.las2peer.p2p.PastryNodeImpl;
-import i5.las2peer.p2p.ServiceNameVersion;
-import i5.las2peer.persistency.Envelope;
+import i5.las2peer.persistency.EnvelopeVersion;
 import i5.las2peer.persistency.SharedStorage.STORAGE_MODE;
-import i5.las2peer.security.Agent;
-import i5.las2peer.security.ServiceAgent;
-import i5.las2peer.security.UserAgent;
+import i5.las2peer.security.AgentImpl;
+import i5.las2peer.security.ServiceAgentImpl;
+import i5.las2peer.security.UserAgentImpl;
 import i5.las2peer.testing.MockAgentFactory;
 import i5.las2peer.testing.TestSuite;
-import i5.las2peer.webConnector.WebConnector;
-import i5.las2peer.webConnector.client.ClientResponse;
-import i5.las2peer.webConnector.client.MiniClient;
 
 /**
  * Example Test Class demonstrating a basic JUnit test structure.
@@ -40,16 +40,16 @@ public class ServiceTest {
 	private static WebConnector connector;
 	private static ByteArrayOutputStream logStream;
 
-	private static UserAgent agentAdam;
-	private static UserAgent agentEve;
-	private static UserAgent agentAbel;
+	private static UserAgentImpl agentAdam;
+	private static UserAgentImpl agentEve;
+	private static UserAgentImpl agentAbel;
 	private static final String passAdam = "adamspass";
 	private static final String passEve = "evespass";
 	private static final String passAbel = "abelspass";
 
 	private static final String mainPath = "contactservice/";
-
-	private static ServiceAgent testService2;
+	private static ServiceAgentImpl testService;
+	private static ServiceAgentImpl testService2;
 
 	/**
 	 * Called before the tests start.
@@ -65,24 +65,24 @@ public class ServiceTest {
 		nodes = TestSuite.launchNetwork(1, STORAGE_MODE.FILESYSTEM, true);
 		node = nodes.get(0);
 		agentAdam = MockAgentFactory.getAdam();
-		agentAdam.unlockPrivateKey(passAdam);
+		agentAdam.unlock(passAdam);
 		agentEve = MockAgentFactory.getEve();
-		agentEve.unlockPrivateKey(passEve);
+		agentEve.unlock(passEve);
 		agentAbel = MockAgentFactory.getAbel();
-		agentAbel.unlockPrivateKey(passAbel);
+		agentAbel.unlock(passAbel);
 		node.storeAgent(agentAdam);
 		node.storeAgent(agentEve);
 		node.storeAgent(agentAbel);
 
 		// during testing, the specified service version does not matter
-		ServiceAgent testService = ServiceAgent.createServiceAgent(
+		testService = ServiceAgentImpl.createServiceAgent(
 				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@1.0"), "a pass");
-		testService.unlockPrivateKey("a pass");
+		testService.unlock("a pass");
 
-		testService2 = ServiceAgent.createServiceAgent(
+		testService2 = ServiceAgentImpl.createServiceAgent(
 				ServiceNameVersion.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.1"),
 				"a pass");
-		testService2.unlockPrivateKey("a pass");
+		testService2.unlock("a pass");
 
 		node.registerReceiver(testService);
 		node.registerReceiver(testService2);
@@ -133,11 +133,11 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// Test get contact name
 
-			ClientResponse result = c.sendRequest("GET", mainPath + "name/" + Long.toString(agentAdam.getId()), "");
+			ClientResponse result = c.sendRequest("GET", mainPath + "name/" + agentAdam.getIdentifier(), "");
 			assertEquals(200, result.getHttpCode());
 			assertTrue(result.getResponse().trim().contains("adam"));
 			System.out.println("Result of 'testAddRemoveContact': " + result.getResponse().trim());
@@ -193,7 +193,7 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// get Contacts with no contacts
 			ClientResponse result = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
@@ -229,6 +229,31 @@ public class ServiceTest {
 			assertEquals(200, result4.getHttpCode());
 			assertTrue(result4.getResponse().trim().contains("{}"));
 			System.out.println("Result of 'testGetContacts': " + result4.getResponse().trim());
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+
+	@Test
+	public void testGetContactsWithUnknownAgent() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
+			agentAdam.unlock(passAdam);
+			String identifier = "contacts_" + agentAdam.getIdentifier();
+			ContactContainer cc = new ContactContainer();
+			cc.addContact("1337");
+			createEnvelopeWithContent(identifier, agentAdam, cc);
+
+			ClientResponse result = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
+					new HashMap<String, String>());
+			assertEquals(200, result.getHttpCode());
+			assertTrue(result.getResponse().trim().contains("{}"));
+			System.out.println("Result of 'testGetContactsWithUnknownAgent': " + result.getResponse().trim());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
@@ -241,9 +266,9 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
-			// Add a contact
+			// Add a group
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result.getResponse().trim());
@@ -270,15 +295,20 @@ public class ServiceTest {
 			System.out.println("Result of 'testGroups': " + result3.getResponse().trim());
 
 			// try another agent
-			c.setLogin(Long.toString(agentAbel.getId()), passAbel);
+			c.setLogin(agentAbel.getIdentifier(), passAbel);
 
 			ClientResponse result4 = c.sendRequest("GET", mainPath + "groups", "");
 			assertEquals(200, result4.getHttpCode());
 			assertTrue(result4.getResponse().contains("{}"));
 			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
 
+			result4 = c.sendRequest("GET", mainPath + "groups/testGroup", "");
+			assertEquals(400, result4.getHttpCode());
+			assertTrue(result4.getResponse().contains("{}"));
+			System.out.println("Result of 'testGroups': " + result4.getResponse().trim());
+
 			// add agent with first agent
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			ClientResponse result5 = c.sendRequest("POST", mainPath + "groups/testGroup/member/abel", "");
 			assertEquals(200, result5.getHttpCode());
@@ -290,7 +320,8 @@ public class ServiceTest {
 			System.out.println("Result of 'testGroups': " + result6.getResponse().trim());
 
 			// Check group member
-			ClientResponse result7 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "");
+			ClientResponse result7 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "", "text/plain",
+					"application/json", new HashMap<String, String>());
 			assertEquals(200, result7.getHttpCode());
 			assertTrue(result7.getResponse().contains("abel"));
 			System.out.println("Result of 'testGroups': " + result7.getResponse().trim());
@@ -301,7 +332,7 @@ public class ServiceTest {
 
 			// now check with other agent again
 
-			c.setLogin(Long.toString(agentAbel.getId()), passAbel);
+			c.setLogin(agentAbel.getIdentifier(), passAbel);
 
 			ClientResponse result8 = c.sendRequest("GET", mainPath + "groups/testGroup/member", "");
 			assertEquals(200, result8.getHttpCode());
@@ -326,12 +357,50 @@ public class ServiceTest {
 
 			// remove again should not work
 			result11 = c.sendRequest("DELETE", mainPath + "groups/testGroup", "");
-			assertEquals(400, result11.getHttpCode());
+			assertEquals(404, result11.getHttpCode());
 
 			result9 = c.sendRequest("GET", mainPath + "groups/testGroup", "");
-			assertEquals(400, result9.getHttpCode());
+			assertEquals(404, result9.getHttpCode());
 			System.out.println("Result of 'testGroups': " + result9.getResponse().trim());
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+
+	@Test
+	public void testBlockGroups() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
+			agentEve.unlock(passEve);
+			String identifier = "groups_testGroup";
+			createEnvelope(identifier, agentEve);
+			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
+			assertEquals(400, result.getHttpCode());
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Exception: " + e);
+		}
+	}
+
+	@Test
+	public void testRemoveGroupMember() {
+		MiniClient c = new MiniClient();
+		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+
+		try {
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
+			agentAdam.unlock(passAdam);
+			String identifier = "groups_testGroup";
+			ContactContainer cc = new ContactContainer();
+			cc.addGroup("testGroup", "1337");
+			createEnvelopeWithContent(identifier, agentAdam, cc);
+			ClientResponse result = c.sendRequest("DELETE", mainPath + "groups/testGroup/member/adam", "");
+			assertEquals(404, result.getHttpCode());
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Exception: " + e);
@@ -344,14 +413,14 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// Add a contact
 			ClientResponse result = c.sendRequest("POST", mainPath + "addressbook", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result.getResponse().trim());
 
-			c.setLogin(Long.toString(agentEve.getId()), passEve);
+			c.setLogin(agentEve.getIdentifier(), passEve);
 			ClientResponse result2 = c.sendRequest("POST", mainPath + "addressbook", "");
 			assertEquals(200, result2.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result2.getResponse().trim());
@@ -360,7 +429,7 @@ public class ServiceTest {
 			assertEquals(400, result2.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result2.getResponse().trim());
 
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// Get contacts
 			ClientResponse result3 = c.sendRequest("GET", mainPath + "addressbook", "");
@@ -376,7 +445,7 @@ public class ServiceTest {
 			assertEquals(404, result4.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result4.getResponse().trim());
 
-			c.setLogin(Long.toString(agentEve.getId()), passEve);
+			c.setLogin(agentEve.getIdentifier(), passEve);
 			ClientResponse result5 = c.sendRequest("GET", mainPath + "addressbook", "");
 			assertEquals(200, result5.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result5.getResponse().trim());
@@ -385,13 +454,14 @@ public class ServiceTest {
 			assertEquals(200, result6.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result6.getResponse().trim());
 
-			Envelope stored = node.fetchEnvelope("addressbook");
+			EnvelopeVersion stored = node
+					.fetchEnvelope(testService.getServiceNameVersion().getName() + "$" + "addressbook");
 			ContactContainer cc = (ContactContainer) stored.getContent();
-			cc.addContact((long) 1337);
-			Envelope env = node.createUnencryptedEnvelope(stored, cc);
-			node.storeEnvelope(env, node.getAnonymous());
+			cc.addContact("1337");
+			EnvelopeVersion env = node.createUnencryptedEnvelope(stored, cc);
+			node.storeEnvelope(env, testService);
 
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			result6 = c.sendRequest("GET", mainPath + "addressbook", "");
 			assertEquals(200, result6.getHttpCode());
 			System.out.println("Result of 'testAddressBook2': " + result6.getResponse().trim());
@@ -407,7 +477,7 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			ClientResponse result = c.sendRequest("GET", mainPath + "addressbook", "");
 			assertEquals(200, result.getHttpCode());
 			System.out.println("Result of 'testAddressBook': " + result.getResponse().trim());
@@ -427,7 +497,7 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// Get permissions
 			ClientResponse result = c.sendRequest("GET", mainPath + "permission", "");
@@ -465,7 +535,7 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 		try {
 			node.unregisterReceiver(testService2);
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// Get permissions
 			ClientResponse result = c.sendRequest("GET", mainPath + "permission", "");
@@ -503,11 +573,11 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			agentEve.unlockPrivateKey(passEve);
+			agentEve.unlock(passEve);
 			// Blocking contacts
-			createEnvelope("contacts_" + Long.toString(agentAdam.getId()), agentEve);
+			createEnvelope("contacts_" + agentAdam.getIdentifier(), agentEve);
 
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			// get Contacts with no contacts
 			ClientResponse result = c.sendRequest("GET", mainPath, "", "text/plain", "application/json",
 					new HashMap<String, String>());
@@ -525,7 +595,7 @@ public class ServiceTest {
 			// Blocking groups
 			createEnvelope("groups_", agentEve);
 			createEnvelope("groups_test", agentEve);
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
 					new HashMap<String, String>());
 			assertEquals(400, result2.getHttpCode());
@@ -541,7 +611,7 @@ public class ServiceTest {
 
 			// Blocking address book
 			createEnvelope("addressbook", agentEve);
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			ClientResponse result3 = c.sendRequest("POST", mainPath + "addressbook", "");
 			assertEquals(400, result3.getHttpCode());
@@ -567,7 +637,7 @@ public class ServiceTest {
 		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
 
 		try {
-			c.setLogin(Long.toString(agentAdam.getId()), passAdam);
+			c.setLogin(agentAdam.getIdentifier(), passAdam);
 
 			// Remove contact from addressbook
 			ClientResponse result1 = c.sendRequest("DELETE", mainPath + "addressbook", "");
@@ -591,16 +661,29 @@ public class ServiceTest {
 	}
 
 	// helper method
-	public void createEnvelope(String identifier, Agent owner) {
+	public void createEnvelope(String identifier, AgentImpl owner) {
 		ContactContainer cc = new ContactContainer();
 		try {
-			Envelope env = node.createEnvelope(identifier, cc, owner);
+			EnvelopeVersion env = node.createEnvelope(testService.getServiceNameVersion().getName() + "$" + identifier,
+					owner.getPublicKey(), cc, owner);
 			node.storeEnvelope(env, owner);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			// fail("Could not create Envelope.\n"+e.getMessage());
+			fail("Could not create Envelope.\n" + e.getMessage());
 			e.printStackTrace();
 		}
 	}
 
+	// helper method
+	public void createEnvelopeWithContent(String identifier, AgentImpl owner, ContactContainer cc) {
+		try {
+			EnvelopeVersion env = node.createEnvelope(testService.getServiceNameVersion().getName() + "$" + identifier,
+					owner.getPublicKey(), cc, owner);
+			node.storeEnvelope(env, owner);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			fail("Could not create Envelope.\n" + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 }
