@@ -910,7 +910,7 @@ public class ContactService extends RESTService {
 
 				}
 			} catch (Exception e) {
-				// one may want to handle some exceptions differently
+				logger.log(Level.SEVERE, "Can't update user information!", e);
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).build();
@@ -947,7 +947,7 @@ public class ContactService extends RESTService {
 					returnString = hashMap.toString();
 				}
 			} catch (Exception e) {
-				// one may want to handle some exceptions differently
+				logger.log(Level.SEVERE, "Can't get user information!", e);
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
@@ -987,7 +987,7 @@ public class ContactService extends RESTService {
 					returnString = hashMap.toString();
 				}
 			} catch (Exception e) {
-				// one may want to handle some exceptions differently
+				logger.log(Level.SEVERE, "Can't get user information for name!", e);
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
@@ -1046,8 +1046,7 @@ public class ContactService extends RESTService {
 					return Response.status(Status.BAD_REQUEST).entity("Setting permissions failed").build();
 				}
 			} catch (Exception e) {
-				// one may want to handle some exceptions differently
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "Can't get user permission!", e);
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity(returnString).build();
@@ -1083,10 +1082,10 @@ public class ContactService extends RESTService {
 				// RMI call without parameters
 				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "setPermissions", m);
 				if (result != null) {
-					System.out.println("setting permission: " + (result));
+					logger.info("setting permission: " + (result));
 				}
 			} catch (Exception e) {
-				// one may want to handle some exceptions differently
+				logger.log(Level.SEVERE, "Can't update user permission!", e);
 				return Response.status(Status.BAD_REQUEST).entity("").build();
 			}
 			return Response.status(Status.OK).entity("").build();
