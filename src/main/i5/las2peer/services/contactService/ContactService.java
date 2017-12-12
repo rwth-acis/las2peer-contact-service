@@ -88,6 +88,8 @@ import net.minidev.json.parser.JSONParser;
 @ManualDeployment
 public class ContactService extends RESTService {
 
+	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2";
+
 	// instantiate the logger class
 	private final static L2pLogger logger = L2pLogger.getInstance(ContactService.class.getName());
 	private final static String contact_prefix = "contacts_";
@@ -903,9 +905,7 @@ public class ContactService extends RESTService {
 				m.put("lastName", (String) params.get("lastName"));
 				m.put("userImage", (String) params.get("userImage"));
 				// RMI call without parameters
-				Object result = Context.get().invoke(
-						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "set",
-						new Serializable[] { m });
+				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "set", new Serializable[] { m });
 				if (result != null) {
 
 				}
@@ -939,8 +939,7 @@ public class ContactService extends RESTService {
 			try {
 				// RMI call without parameters
 				String[] fields = { "firstName", "lastName", "userImage" };
-				Object result = Context.get().invoke(
-						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "get",
+				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "get",
 						new Serializable[] { Context.get().getMainAgent().getIdentifier(), fields });
 				if (result != null) {
 					@SuppressWarnings({ "unchecked" })
@@ -980,8 +979,7 @@ public class ContactService extends RESTService {
 			try {
 				// RMI call without parameters
 				String[] fields = { "firstName", "lastName", "userImage" };
-				Object result = Context.get().invoke(
-						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "get",
+				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "get",
 						new Serializable[] { Context.get().getUserAgentIdentifierByLoginName(name), fields });
 				if (result != null) {
 					@SuppressWarnings({ "unchecked" })
@@ -1038,8 +1036,7 @@ public class ContactService extends RESTService {
 			try {
 				// RMI call
 				String[] fields = { "firstName", "lastName", "userImage" };
-				Object result = Context.get().invoke(
-						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "getPermissions",
+				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "getPermissions",
 						new Serializable[] { fields });
 				if (result != null) {
 					@SuppressWarnings({ "unchecked" })
@@ -1084,8 +1081,7 @@ public class ContactService extends RESTService {
 				m.put("lastName", (Boolean) params.get("lastName"));
 				m.put("userImage", (Boolean) params.get("userImage"));
 				// RMI call without parameters
-				Object result = Context.get().invoke(
-						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "setPermissions", m);
+				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "setPermissions", m);
 				if (result != null) {
 					System.out.println("setting permission: " + (result));
 				}
