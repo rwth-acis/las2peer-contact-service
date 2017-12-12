@@ -82,7 +82,7 @@ import net.minidev.json.parser.JSONParser;
  * 
  * 
  * @author Alexander Neumann
- * @version 0.1
+ * @version 0.2.1
  */
 @ServicePath("contactservice")
 @ManualDeployment
