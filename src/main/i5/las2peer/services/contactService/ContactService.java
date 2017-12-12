@@ -241,10 +241,11 @@ public class ContactService extends RESTService {
 			// try to store envelope
 			service.storeEnvelope(env, owner);
 
-			if (added)
+			if (added) {
 				return Response.status(Status.OK).entity("Contact added.").build();
-			else
+			} else {
 				return Response.status(Status.BAD_REQUEST).entity("Contact already in list.").build();
+			}
 		}
 
 		/**
@@ -296,10 +297,11 @@ public class ContactService extends RESTService {
 			}
 			env.setContent(cc);
 			service.storeEnvelope(env, owner);
-			if (deleted)
+			if (deleted) {
 				return Response.status(Status.OK).entity("Contact removed.").build();
-			else
+			} else {
 				return Response.status(Status.NOT_FOUND).entity("User is not one of your contacts.").build();
+			}
 		}
 	}
 
@@ -564,9 +566,9 @@ public class ContactService extends RESTService {
 						.requestAgent(String.valueOf(cc.getGroups().get(name)));
 				groupAgent.unlock(Context.get().getMainAgent());
 				String[] memberIds = groupAgent.getMemberList();
-				for (int i = 0; i < memberIds.length; i++) {
-					UserAgent user = (UserAgent) Context.get().fetchAgent(memberIds[i]);
-					result.put(memberIds[i], user.getLoginName());
+				for (String memberId : memberIds) {
+					UserAgent user = (UserAgent) Context.get().fetchAgent(memberId);
+					result.put(memberId, user.getLoginName());
 				}
 			} catch (Exception e) {
 				// write error to logfile and console
@@ -742,10 +744,11 @@ public class ContactService extends RESTService {
 
 			env.setContent(cc);
 			service.storeEnvelope(env, Context.get().getServiceAgent());
-			if (added)
+			if (added) {
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
-			else
+			} else {
 				return Response.status(Status.BAD_REQUEST).entity("Already in list.").build();
+			}
 		}
 
 		/**
@@ -895,7 +898,7 @@ public class ContactService extends RESTService {
 			try {
 				JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 				JSONObject params = (JSONObject) parser.parse(content);
-				HashMap<String, Serializable> m = new HashMap<String, Serializable>();
+				HashMap<String, Serializable> m = new HashMap<>();
 				m.put("firstName", (String) params.get("firstName"));
 				m.put("lastName", (String) params.get("lastName"));
 				m.put("userImage", (String) params.get("userImage"));
@@ -1076,7 +1079,7 @@ public class ContactService extends RESTService {
 			try {
 				JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
 				JSONObject params = (JSONObject) parser.parse(content);
-				HashMap<String, Boolean> m = new HashMap<String, Boolean>();
+				HashMap<String, Boolean> m = new HashMap<>();
 				m.put("firstName", (Boolean) params.get("firstName"));
 				m.put("lastName", (Boolean) params.get("lastName"));
 				m.put("userImage", (Boolean) params.get("userImage"));
@@ -1084,7 +1087,7 @@ public class ContactService extends RESTService {
 				Object result = Context.get().invoke(
 						"i5.las2peer.services.userInformationService.UserInformationService@0.1", "setPermissions", m);
 				if (result != null) {
-					System.out.println("setting permission: " + ((Boolean) result));
+					System.out.println("setting permission: " + (result));
 				}
 			} catch (Exception e) {
 				// one may want to handle some exceptions differently
