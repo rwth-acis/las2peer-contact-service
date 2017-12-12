@@ -18,7 +18,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import i5.las2peer.api.Context;
-import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.persistency.Envelope;
 import i5.las2peer.api.persistency.EnvelopeException;
 import i5.las2peer.api.persistency.EnvelopeNotFoundException;
@@ -85,7 +84,6 @@ import net.minidev.json.parser.JSONParser;
  * @version 0.2.1
  */
 @ServicePath("contactservice")
-@ManualDeployment
 public class ContactService extends RESTService {
 
 	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2";
@@ -95,12 +93,6 @@ public class ContactService extends RESTService {
 	private final static String contact_prefix = "contacts_";
 	private final static String group_prefix = "groups_";
 	private final static String address_prefix = "addressbook";
-
-	public ContactService() {
-		// read and set properties values
-		// IF THE SERVICE CLASS NAME IS CHANGED, THE PROPERTIES FILE NAME NEED TO BE CHANGED TOO!
-		setFieldValues();
-	}
 
 	@Override
 	protected void initResources() {
