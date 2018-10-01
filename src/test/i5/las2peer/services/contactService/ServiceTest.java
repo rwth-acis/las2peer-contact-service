@@ -130,7 +130,7 @@ public class ServiceTest {
 	@Test
 	public void testAddRemoveContact() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -190,7 +190,7 @@ public class ServiceTest {
 	@Test
 	public void testGetContacts() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -239,7 +239,7 @@ public class ServiceTest {
 	@Test
 	public void testGetContactsWithUnknownAgent() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -263,7 +263,7 @@ public class ServiceTest {
 	@Test
 	public void testGroups() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -372,7 +372,7 @@ public class ServiceTest {
 	@Test
 	public void testBlockGroups() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -390,7 +390,7 @@ public class ServiceTest {
 	@Test
 	public void testRemoveGroupMember() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -410,7 +410,7 @@ public class ServiceTest {
 	@Test
 	public void testAddressBook() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -474,7 +474,7 @@ public class ServiceTest {
 	@Test
 	public void testGetAddressBookWithoutArtifact() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -494,7 +494,7 @@ public class ServiceTest {
 	@Test
 	public void testRMI() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -532,7 +532,7 @@ public class ServiceTest {
 	@Test
 	public void testRMIWithoutService() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 		try {
 			node.unregisterReceiver(testService2);
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
@@ -570,7 +570,7 @@ public class ServiceTest {
 	@Test
 	public void testBlockEnvelopes() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			agentEve.unlock(passEve);
@@ -634,7 +634,7 @@ public class ServiceTest {
 	@Test
 	public void testRemoveWithoutStorage() {
 		MiniClient c = new MiniClient();
-		c.setAddressPort(HTTP_ADDRESS, HTTP_PORT);
+		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
