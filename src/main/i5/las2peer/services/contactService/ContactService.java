@@ -826,7 +826,7 @@ public class ContactService extends RESTService {
 						try {
 							user = (UserAgent) Context.get().fetchAgent(l);
 							result.put(user.getIdentifier(), user.getLoginName());
-						} catch (AgentException e1) {
+						} catch (AgentException|ClassCastException e1) {
 							// Skip unknown agents
 							e1.printStackTrace();
 						}
@@ -898,8 +898,8 @@ public class ContactService extends RESTService {
 				m.put("userImage", (String) params.get("userImage"));
 				// RMI call without parameters
 				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "set", new Serializable[] { m });
-				if (result != null) {
-
+				if (result == null) {
+					return Response.status(Status.BAD_REQUEST).entity("Setting user information failed").build();
 				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't update user information!", e);
@@ -937,6 +937,8 @@ public class ContactService extends RESTService {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
 					returnString = hashMap.toString();
+				}else {
+					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed").build();
 				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't get user information!", e);
@@ -977,6 +979,8 @@ public class ContactService extends RESTService {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
 					returnString = hashMap.toString();
+				}else {
+					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed").build();
 				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't get user information for name!", e);
@@ -1035,7 +1039,7 @@ public class ContactService extends RESTService {
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
 					returnString = hashMap.toString();
 				} else {
-					return Response.status(Status.BAD_REQUEST).entity("Setting permissions failed").build();
+					return Response.status(Status.BAD_REQUEST).entity("Getting permissions failed").build();
 				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't get user permission!", e);
@@ -1075,6 +1079,8 @@ public class ContactService extends RESTService {
 				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "setPermissions", m);
 				if (result != null) {
 					logger.info("setting permission: " + (result));
+				}else {
+					return Response.status(Status.BAD_REQUEST).entity("Setting permissions failed").build();
 				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't update user permission!", e);
