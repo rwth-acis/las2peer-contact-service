@@ -81,12 +81,12 @@ import net.minidev.json.parser.JSONParser;
  * 
  * 
  * @author Alexander Neumann
- * @version 0.2.1
+ * @version 0.2.2
  */
 @ServicePath("contactservice")
 public class ContactService extends RESTService {
 
-	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2";
+	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2.1";
 
 	// instantiate the logger class
 	private final static L2pLogger logger = L2pLogger.getInstance(ContactService.class.getName());
@@ -113,7 +113,7 @@ public class ContactService extends RESTService {
 	@SwaggerDefinition(
 			info = @Info(
 					title = "laspeer Contact Service",
-					version = "0.1",
+					version = "0.2.2",
 					description = "A las2peer Contact Service for managing your contacts and groups.",
 					termsOfService = "",
 					contact = @Contact(
