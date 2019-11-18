@@ -90,8 +90,8 @@ public class ContactService extends RESTService {
 
 	// instantiate the logger class
 	private final static L2pLogger logger = L2pLogger.getInstance(ContactService.class.getName());
-	private final static String contact_prefix = "contacts_";
-	private final static String group_prefix = "groups_";
+	private final static String contact_prefix = "contacts";
+	private final static String group_prefix = "groups";
 	private final static String address_prefix = "addressbook";
 
 	@Override
@@ -146,7 +146,7 @@ public class ContactService extends RESTService {
 								message = "Storage problems.") })
 		public Response getContacts() {
 			Agent owner = Context.get().getMainAgent();
-			String identifier = contact_prefix + owner.getIdentifier();
+			String identifier = contact_prefix + "_" + owner.getIdentifier();
 			JSONObject result = new JSONObject();
 			try {
 				try {
@@ -203,7 +203,7 @@ public class ContactService extends RESTService {
 		public Response addContact(@PathParam("name") String name) {
 			// Setting owner and identifier for envelope
 			Agent owner = Context.get().getMainAgent();
-			String identifier = contact_prefix + owner.getIdentifier();
+			String identifier = contact_prefix + "_" + owner.getIdentifier();
 			Envelope env = null;
 			boolean added = false;
 			String userID = "";
@@ -267,7 +267,7 @@ public class ContactService extends RESTService {
 				notes = "Removes a contact from your contact list.")
 		public Response removeContact(@PathParam("name") String name) {
 			Agent owner = Context.get().getMainAgent();
-			String identifier = contact_prefix + owner.getIdentifier();
+			String identifier = contact_prefix + "_" + owner.getIdentifier();
 			Envelope env = null;
 			boolean deleted = false;
 			ContactContainer cc = null;
@@ -393,7 +393,7 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Group not found or storage problems.") })
 		public Response getGroup(@PathParam("name") String name) {
-			String identifier = group_prefix + name;
+			String identifier = group_prefix + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -442,7 +442,7 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			Envelope env2 = null;
 			String id = "";
-			String identifier = group_prefix + name;
+			String identifier = group_prefix + "_" + name;
 			String identifier2 = group_prefix;
 			GroupAgent groupAgent;
 			ContactContainer cc = null;
@@ -509,7 +509,7 @@ public class ContactService extends RESTService {
 		public Response removeGroup(@PathParam("name") String name) {
 			Envelope env = null;
 			try {
-				String identifier = group_prefix + name;
+				String identifier = group_prefix + "_" + name;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				String groupID = cc.getGroups().get(name);
@@ -552,7 +552,7 @@ public class ContactService extends RESTService {
 								message = "Storage problems.") })
 		public Response getGroupMember(@PathParam("name") String name) {
 			JSONObject result = new JSONObject();
-			String identifier = group_prefix + name;
+			String identifier = group_prefix + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -602,7 +602,7 @@ public class ContactService extends RESTService {
 			Agent test = null;
 			GroupAgent groupAgent = null;
 			try {
-				String identifier = group_prefix + groupName;
+				String identifier = group_prefix + "_" + groupName;
 				// Get envelope
 				env = Context.get().requestEnvelope(identifier, Context.get().getMainAgent());
 				ContactContainer cc = (ContactContainer) env.getContent();
@@ -651,7 +651,7 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			GroupAgent groupAgent = null;
 			try {
-				String identifier = group_prefix + groupName;
+				String identifier = group_prefix + "_" + groupName;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				try {

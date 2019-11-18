@@ -677,7 +677,7 @@ public class ServiceTest {
 			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
 
 			// Blocking groups
-			createEnvelope("groups_", agentEve);
+			createEnvelope("groups", agentEve);
 			createEnvelope("groups_test", agentEve);
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
