@@ -7,20 +7,49 @@ import java.util.Map;
 import i5.las2peer.api.Service;
 
 public class UserInformationService extends Service {
+	static String status = "working";
 
-	public boolean setPermissions(Map<String, Boolean> permissions) {
+	public Object setPermissions(Map<String, Object> permissions) {
+		if((boolean)permissions.get("firstName") ==false) {
+			status = "null";
+			return null;
+		}else if((boolean) permissions.get("lastName") == false) {
+			status = "wrong";
+			return "";
+		}
 		return true;
 	}
 
-	public Map<String, Boolean> getPermissions(String[] fields) {
+	public Object getPermissions(String[] fields) {
+		if(status.equals("null")) {
+			status = "working";
+			return null;
+		}else if(status.equals("wrong")) {
+			status = "working";
+			return "";
+		}
 		return new HashMap<String, Boolean>();
 	}
 
-	public boolean set(Map<String, Serializable> values) {
+	public Object set(Map<String, Serializable> values) {
+		if(values.get("firstName").equals("false")) {
+			status = "null";
+			return null;
+		}else if(values.get("lastName").equals("false")) {
+			status = "wrong";
+			return "";
+		}
 		return true;
 	}
 
-	public Map<String, Serializable> get(String agentId, String[] fields) {
+	public Object get(String agentId, String[] fields) {
+		if(status.equals("null")) {
+			status = "working";
+			return null;
+		}else if(status.equals("wrong")) {
+			status = "working";
+			return "";
+		}
 		return new HashMap<String, Serializable>();
 	}
 }
