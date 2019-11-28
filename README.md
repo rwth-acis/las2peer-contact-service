@@ -2,7 +2,7 @@
 
 # las2peer-Contact-Service 
 
-[![Build Status](https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Contact-Service) [![codecov](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service/branch/master/graph/badge.svg)](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service)
+[![Build Status](https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Contact-Service) [![Code Coverage](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service/branch/master/graph/badge.svg)](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service) [![Dependencies](https://img.shields.io/librariesio/github/rwth-acis/las2peer-Contact-Service)](https://libraries.igo/github/rwth-acis/las2peer-contact-service)
 
 A simple RESTful service for managing contacts and groups. The service is based on [las2peer](https://github.com/rwth-acis/LAS2peer). We provide a [polymer widget](https://github.com/rwth-acis/las2peer-frontend-user-widget) which can be used as a frontend for this service. 
 
