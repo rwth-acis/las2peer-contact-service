@@ -1,8 +1,15 @@
-![las2peer](https://rwth-acis.github.io/las2peer/logo/vector/las2peer-logo.svg)
-
-# las2peer-Contact-Service 
-
-[![Build Status](https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Contact-Service) [![codecov](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service/branch/master/graph/badge.svg)](https://codecov.io/gh/rwth-acis/las2peer-Contact-Service)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/rwth-acis/las2peer/master/img/logo/bitmap/las2peer-logo-128x128.png" />
+</p>
+<h1 align="center">las2peer-Contact-Service</h1>
+<p align="center">
+  <a href="https://travis-ci.org/rwth-acis/las2peer-Contact-Service" alt="Travis Build Status">
+        <img src="https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master" /></a>
+  <a href="https://codecov.io/gh/rwth-acis/las2peer-Contact-Service" alt="Code Coverage">
+        <img src="https://codecov.io/gh/rwth-acis/las2peer-Contact-Service/branch/master/graph/badge.svg" /></a>
+  <a href="https://libraries.igo/github/rwth-acis/las2peer-contact-service" alt="Dependencies">
+        <img src="https://img.shields.io/librariesio/github/rwth-acis/las2peer-Contact-Service" /></a>
+</p>
 
 A simple RESTful service for managing contacts and groups. The service is based on [las2peer](https://github.com/rwth-acis/LAS2peer). We provide a [polymer widget](https://github.com/rwth-acis/las2peer-frontend-user-widget) which can be used as a frontend for this service. 
 
