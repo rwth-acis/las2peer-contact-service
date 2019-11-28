@@ -81,12 +81,12 @@ import net.minidev.json.parser.JSONParser;
  * 
  * 
  * @author Alexander Neumann
- * @version 0.2.2
+ * @version 0.2.3
  */
 @ServicePath("contactservice")
 public class ContactService extends RESTService {
 
-	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2.1";
+	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2.3";
 
 	// instantiate the logger class
 	private final static L2pLogger logger = L2pLogger.getInstance(ContactService.class.getName());
@@ -826,7 +826,7 @@ public class ContactService extends RESTService {
 						try {
 							user = (UserAgent) Context.get().fetchAgent(l);
 							result.put(user.getIdentifier(), user.getLoginName());
-						} catch (AgentException|ClassCastException e1) {
+						} catch (AgentException | ClassCastException e1) {
 							// Skip unknown agents
 							e1.printStackTrace();
 						}
@@ -899,9 +899,11 @@ public class ContactService extends RESTService {
 				// RMI call without parameters
 				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "set", new Serializable[] { m });
 				if (result == null) {
-					return Response.status(Status.BAD_REQUEST).entity("Setting user information failed. No result.").build();
+					return Response.status(Status.BAD_REQUEST).entity("Setting user information failed. No result.")
+							.build();
 				} else if (!(result instanceof Boolean)) {
-					return Response.status(Status.BAD_REQUEST).entity("Setting user information failed. Wrong type.").build();
+					return Response.status(Status.BAD_REQUEST).entity("Setting user information failed. Wrong type.")
+							.build();
 				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't update user information!", e);
@@ -936,10 +938,12 @@ public class ContactService extends RESTService {
 				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "get",
 						new Serializable[] { Context.get().getMainAgent().getIdentifier(), fields });
 				if (result == null) {
-					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed. No result.").build();
-				}else if(!(result instanceof HashMap<?, ?>)) {
-					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed. Wrong type.").build();
-				}else {
+					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed. No result.")
+							.build();
+				} else if (!(result instanceof HashMap<?, ?>)) {
+					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed. Wrong type.")
+							.build();
+				} else {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
 					returnString = hashMap.toString();
@@ -983,7 +987,7 @@ public class ContactService extends RESTService {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Serializable> hashMap = (HashMap<String, Serializable>) result;
 					returnString = hashMap.toString();
-				}else {
+				} else {
 					return Response.status(Status.BAD_REQUEST).entity("Getting user information failed").build();
 				}
 			} catch (Exception e) {
@@ -1040,13 +1044,14 @@ public class ContactService extends RESTService {
 						new Serializable[] { fields });
 				if (result == null) {
 					return Response.status(Status.BAD_REQUEST).entity("Getting permissions failed. No result.").build();
-				}else if(!(result instanceof HashMap<?, ?>)){
-					return Response.status(Status.BAD_REQUEST).entity("Getting permissions failed. Wrong type.").build();
-				}else {
+				} else if (!(result instanceof HashMap<?, ?>)) {
+					return Response.status(Status.BAD_REQUEST).entity("Getting permissions failed. Wrong type.")
+							.build();
+				} else {
 					@SuppressWarnings({ "unchecked" })
 					HashMap<String, Boolean> hashMap = (HashMap<String, Boolean>) result;
 					returnString = hashMap.toString();
-				} 
+				}
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Can't get user permission!", e);
 				return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -1085,9 +1090,9 @@ public class ContactService extends RESTService {
 				Object result = Context.get().invoke(USER_INFORMATION_SERVICE, "setPermissions", m);
 				if (result == null) {
 					return Response.status(Status.BAD_REQUEST).entity("Setting permissions failed. No result.").build();
-				}else if(!(result instanceof Boolean)){
+				} else if (!(result instanceof Boolean)) {
 					return Response.status(Status.BAD_REQUEST).entity("Setting permissions failed. Wrong type").build();
-				}else {
+				} else {
 					logger.info("setting permission: " + (result));
 				}
 			} catch (Exception e) {

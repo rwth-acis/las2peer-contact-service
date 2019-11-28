@@ -76,12 +76,11 @@ public class ServiceTest {
 
 		// during testing, the specified service version does not matter
 		testService = ServiceAgentImpl.createServiceAgent(
-				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.2"), "a pass");
+				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.3"), "a pass");
 		testService.unlock("a pass");
 
-		testService2 = ServiceAgentImpl.createServiceAgent(
-				ServiceNameVersion.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.1"),
-				"a pass");
+		testService2 = ServiceAgentImpl.createServiceAgent(ServiceNameVersion
+				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.3"), "a pass");
 		testService2.unlock("a pass");
 
 		node.registerReceiver(testService);
@@ -509,23 +508,23 @@ public class ServiceTest {
 					"{firstName:" + "true" + ",lastName:" + "true" + ",userImage:" + "true" + "}");
 			assertEquals(200, result1.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result1.getResponse().trim());
-			
+
 			// null
 			result1 = c.sendRequest("POST", mainPath + "permission",
 					"{firstName:" + "false" + ",lastName:" + "true" + ",userImage:" + "true" + "}");
 			assertEquals(400, result1.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result1.getResponse().trim());
-			
+
 			result = c.sendRequest("GET", mainPath + "permission", "");
 			assertEquals(400, result.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result.getResponse().trim());
-			
+
 			// wrong content
 			result1 = c.sendRequest("POST", mainPath + "permission",
 					"{firstName:" + "true" + ",lastName:" + "false" + ",userImage:" + "true" + "}");
 			assertEquals(400, result1.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result1.getResponse().trim());
-			
+
 			result = c.sendRequest("GET", mainPath + "permission", "");
 			assertEquals(400, result.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result.getResponse().trim());
@@ -543,51 +542,51 @@ public class ServiceTest {
 			ClientResponse result4 = c.sendRequest("GET", mainPath + "user/abel", "");
 			assertEquals(200, result4.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result4.getResponse().trim());
-			
+
 			// set null
 			result2 = c.sendRequest("POST", mainPath + "user",
 					"{firstName:" + "\"false\"" + ",lastName:" + "\"Nachname\"" + ",userImage:" + "\"Url\"" + "}");
 			assertEquals(400, result2.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
-			
+
 			result3 = c.sendRequest("GET", mainPath + "user", "");
 			assertEquals(400, result3.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result3.getResponse().trim());
-			
+
 			result2 = c.sendRequest("POST", mainPath + "user",
 					"{firstName:" + "\"false\"" + ",lastName:" + "\"Nachname\"" + ",userImage:" + "\"Url\"" + "}");
 			assertEquals(400, result2.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
-			
+
 			result3 = c.sendRequest("GET", mainPath + "user/adam", "");
 			assertEquals(400, result3.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result3.getResponse().trim());
-			
+
 			// set wrong type
 			result2 = c.sendRequest("POST", mainPath + "user",
 					"{firstName:" + "\"Vorname\"" + ",lastName:" + "\"false\"" + ",userImage:" + "\"Url\"" + "}");
 			assertEquals(400, result2.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
-			
+
 			result3 = c.sendRequest("GET", mainPath + "user", "");
 			assertEquals(400, result3.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result3.getResponse().trim());
-			
+
 			result2 = c.sendRequest("POST", mainPath + "user",
 					"{firstName:" + "\"Vorname\"" + ",lastName:" + "\"false\"" + ",userImage:" + "\"Url\"" + "}");
 			assertEquals(400, result2.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result2.getResponse().trim());
-			
+
 			result3 = c.sendRequest("GET", mainPath + "user/adam", "");
 			assertEquals(400, result3.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result3.getResponse().trim());
-			
+
 			// stop service
 			node.unregisterReceiver(testService2);
 			result = c.sendRequest("GET", mainPath + "permission", "");
 			assertEquals(400, result.getHttpCode());
 			System.out.println("Result of 'testRMI': " + result.getResponse().trim());
-			
+
 			// Set permissions
 			result1 = c.sendRequest("POST", mainPath + "permission",
 					"{firstName:" + "true" + ",lastName:" + "true" + ",userImage:" + "true" + "}");
