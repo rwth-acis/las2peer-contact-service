@@ -7,7 +7,7 @@
         <img src="https://travis-ci.org/rwth-acis/las2peer-Contact-Service.svg?branch=master" /></a>
   <a href="https://codecov.io/gh/rwth-acis/las2peer-Contact-Service" alt="Code Coverage">
         <img src="https://codecov.io/gh/rwth-acis/las2peer-Contact-Service/branch/master/graph/badge.svg" /></a>
-  <a href="https://libraries.igo/github/rwth-acis/las2peer-contact-service" alt="Dependencies">
+  <a href="https://libraries.io/github/rwth-acis/las2peer-contact-service" alt="Dependencies">
         <img src="https://img.shields.io/librariesio/github/rwth-acis/las2peer-Contact-Service" /></a>
 </p>
 
