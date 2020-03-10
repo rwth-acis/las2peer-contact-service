@@ -81,7 +81,7 @@ import net.minidev.json.parser.JSONParser;
  * 
  * 
  * @author Alexander Neumann
- * @version 0.2.3
+ * @version 0.2.4
  */
 @ServicePath("contactservice")
 public class ContactService extends RESTService {
