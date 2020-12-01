@@ -86,7 +86,7 @@ import net.minidev.json.parser.JSONParser;
 @ServicePath("contactservice")
 public class ContactService extends RESTService {
 
-	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2.3";
+	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2.5";
 
 	// instantiate the logger class
 	private final static L2pLogger logger = L2pLogger.getInstance(ContactService.class.getName());
