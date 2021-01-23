@@ -15,3 +15,5 @@ restMapping.xml
 /output/
 *.DS_Store
 /bin
+*.project
+etc/launcher-configuration.ini
