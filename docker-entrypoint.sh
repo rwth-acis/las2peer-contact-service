@@ -60,6 +60,7 @@ function selectMnemonic() {
 echo external_address = $(curl -s https://ipinfo.io/ip):${LAS2PEER_PORT} >etc/pastry.properties
 echo ${LAUNCH_COMMAND}
 
+echo external_address = $(curl -s https://ipinfo.io/ip):${LAS2PEER_PORT} > etc/pastry.properties
 # start the service within a las2peer node
 if [[ -z "${@}" ]]; then
     if [ -n "$LAS2PEER_ETH_HOST" ]; then
