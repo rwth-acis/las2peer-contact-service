@@ -1,10 +1,10 @@
 contact_service/export/
 contact_service/output/
-/tmp/
+contact_service/log/
+contact_service/tmp/
 /.las2peer
 /node-storage
 /startup
-/log/
 /lib
 etc/ivy/ivy.jar
 /service
