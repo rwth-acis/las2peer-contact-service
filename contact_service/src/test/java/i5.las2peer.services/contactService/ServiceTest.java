@@ -76,11 +76,11 @@ public class ServiceTest {
 
 		// during testing, the specified service version does not matter
 		testService = ServiceAgentImpl.createServiceAgent(
-				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.3"), "a pass");
+				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.4"), "a pass");
 		testService.unlock("a pass");
 
 		testService2 = ServiceAgentImpl.createServiceAgent(ServiceNameVersion
-				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.3"), "a pass");
+				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.5"), "a pass");
 		testService2.unlock("a pass");
 
 		node.registerReceiver(testService);

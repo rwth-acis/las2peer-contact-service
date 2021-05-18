@@ -1,9 +1,10 @@
-/export
-/tmp
+contact_service/export/
+contact_service/output/
+contact_service/log/
+contact_service/tmp/
 /.las2peer
 /node-storage
 /startup
-/log
 /lib
 etc/ivy/ivy.jar
 /service
@@ -12,6 +13,10 @@ etc/ivy/ivy.jar
 /.idea
 restMapping.xml
 /out
-/output/
 *.DS_Store
-/bin
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
