@@ -20,3 +20,4 @@ restMapping.xml
 
 # Ignore Gradle build output directory
 build
+.project
