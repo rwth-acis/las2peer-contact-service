@@ -113,7 +113,7 @@ public class ContactService extends RESTService {
 	@SwaggerDefinition(
 			info = @Info(
 					title = "laspeer Contact Service",
-					version = "0.2.2",
+					version = "0.2.4",
 					description = "A las2peer Contact Service for managing your contacts and groups.",
 					termsOfService = "",
 					contact = @Contact(
@@ -571,6 +571,49 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.OK).entity(result).build();
 		}
+		
+		
+		/**
+		 * Retrieve id number of a group.
+		 * 
+		 * @param name Name of the group.
+		 * @return Returns a Response with the group number.
+		 * @since 0.2.1
+		 */
+		@GET
+		@Path("/{name}/id")
+		@Produces(MediaType.APPLICATION_JSON)
+		@ApiOperation(
+				value = "Get Group Id",
+				notes = "Get the Id of the given group.")
+		@ApiResponses(
+				value = { @ApiResponse(
+						code = HttpURLConnection.HTTP_OK,
+						message = "Got group id!"),
+						@ApiResponse(
+								code = HttpURLConnection.HTTP_BAD_REQUEST,
+								message = "Storage problems.") })
+		public Response getGroupId(@PathParam("name") String name) {
+			JSONObject result = new JSONObject();
+			String identifier = group_prefix + "_" + name;
+			try {
+				Envelope stored = Context.get().requestEnvelope(identifier);
+				ContactContainer cc = (ContactContainer) stored.getContent();
+				GroupAgent groupAgent = (GroupAgent) Context.get()
+						.requestAgent(String.valueOf(cc.getGroups().get(name)));
+				groupAgent.unlock(Context.get().getMainAgent());
+				System.out.println(groupAgent);
+				System.out.println(groupAgent.getIdentifier());
+					result.put("groupId", groupAgent.getIdentifier());
+				
+			} catch (Exception e) {
+				// write error to logfile and console
+				logger.log(Level.SEVERE, "Can't get group id!", e);
+				return Response.status(Status.BAD_REQUEST).entity(e.toString()).build();
+			}
+			return Response.status(Status.OK).entity(result).build();
+		}
+		
 
 		/**
 		 * Adds a member to a group.
