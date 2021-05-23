@@ -18,7 +18,7 @@ Build
 Execute the following command on your shell:
 
 ```shell
-ant all 
+./gradlew build
 ```
 
 Start

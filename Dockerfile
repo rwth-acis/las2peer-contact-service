@@ -18,8 +18,6 @@ RUN ./gradlew --version
 
 
 
-# Build
-RUN ./gradlew --no-daemon build
 RUN dos2unix /src/docker-entrypoint.sh
 RUN dos2unix /src/gradle.properties
 EXPOSE $LAS2PEER_PORT
