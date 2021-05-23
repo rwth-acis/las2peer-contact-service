@@ -18,7 +18,7 @@ RUN ./gradlew --version
 COPY --chown=las2peer:las2peer . /src
 
 # Build
-RUN ./gradlew --no-daemon build
+RUN chmod +x gradlew && ./gradlew build
 
 EXPOSE $LAS2PEER_PORT
 
