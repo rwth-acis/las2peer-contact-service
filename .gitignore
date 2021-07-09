@@ -2,6 +2,10 @@ contact_service/export/
 contact_service/output/
 contact_service/log/
 contact_service/tmp/
+log/
+output/
+export/
+tmp/
 /.las2peer
 /node-storage
 /startup
