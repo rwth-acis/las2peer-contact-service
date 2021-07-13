@@ -107,6 +107,8 @@ task copyToLib(type: Copy) {
 
 build.dependsOn copyJar
 build.dependsOn copyToLib
+build.dependsOn "copyToLib"
+build.dependsOn "copyJar"
 
 task startscripts {
     new File("$rootDir/bin", "start_network.sh").text = """
@@ -180,8 +182,11 @@ task generateUserAgent2 {
 }
 
 copyTest.dependsOn "copyToLib"
- copyTest.dependsOn "copyJar"
- 
+copyTest.dependsOn "copyJar"
+
+copyTest.dependsOn copyToLib
+copyTest.dependsOn copyJar
+
 task generateUserAgent3 {
     dependsOn "jar"
 
