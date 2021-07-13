@@ -179,6 +179,9 @@ task generateUserAgent2 {
     }
 }
 
+copyTest.dependsOn "copyToLib"
+ copyTest.dependsOn "copyJar"
+ 
 task generateUserAgent3 {
     dependsOn "jar"
 
