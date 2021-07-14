@@ -1,6 +1,7 @@
 FROM gradle:6.7-jdk14 as build
 
 COPY . /home/gradle/src
+RUN true
 WORKDIR /home/gradle/src
 
 RUN gradle export -x test
@@ -19,15 +20,20 @@ RUN addgroup -g 1777 -S las2peer && \
     adduser -u 1777 -S las2peer -G las2peer
 
 COPY --chown=las2peer:las2peer . /src
+RUN true
 WORKDIR /src
 USER las2peer
 RUN dos2unix gradlew
 RUN dos2unix /src/docker-entrypoint.sh
 RUN touch /src/etc/pastry.properties
 COPY --chown=las2peer:las2peer --from=build /home/gradle/src/contact_service/build/export/ .
+RUN true
 COPY --chown=las2peer:las2peer docker-entrypoint.sh /src/docker-entrypoint.sh
+RUN true
 COPY --chown=las2peer:las2peer gradle.properties /src/gradle.properties
+RUN true
 COPY --chown=las2peer:las2peer gradle.properties /src/etc/pastry.properties
+RUN true
 RUN chmod +x docker-entrypoint.sh
 
 RUN dos2unix docker-entrypoint.sh
