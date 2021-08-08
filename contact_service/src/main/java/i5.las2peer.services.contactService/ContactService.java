@@ -29,6 +29,7 @@ import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
+import i5.las2peer.security.BotAgent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -93,7 +94,8 @@ public class ContactService extends RESTService {
 	private final static String contact_prefix = "contacts";
 	private final static String group_prefix = "groups";
 	private final static String address_prefix = "addressbook";
-
+	private static String contactStorerAgentName;
+	private static String contactStorerAgentPW; 
 	@Override
 	protected void initResources() {
 		getResourceConfig().register(ContactResource.class);
@@ -337,11 +339,19 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Storage problems.") })
 		public Response getGroups() {
-			String identifier = group_prefix;
+			String identifier = contactStorerAgentPW;
 			JSONObject result = new JSONObject();
+			UserAgent contactStorer = null;
 			try {
 				try {
-					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					contactStorer =(UserAgent) Context.getCurrent().fetchAgent(Context.getCurrent()
+							.getUserAgentIdentifierByLoginName(contactStorerAgentName));
+					contactStorer.unlock(contactStorerAgentPW);
+				} catch(Exception e) {
+					System.out.println("apparently no contact storer there or not unlockable");
+				}
+				try {
+					Envelope stored = Context.get().requestEnvelope(identifier, contactStorer);
 					ContactContainer cc = (ContactContainer) stored.getContent();
 					Set<String> groupNames = cc.getGroups().keySet();
 					String groupId = "";
@@ -361,7 +371,7 @@ public class ContactService extends RESTService {
 					env = Context.get().createEnvelope(identifier);
 					env.setPublic();
 					env.setContent(cc);
-					service.storeEnvelope(env, Context.get().getServiceAgent());
+					service.storeEnvelope(env, contactStorer);
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
@@ -393,7 +403,7 @@ public class ContactService extends RESTService {
 								code = HttpURLConnection.HTTP_BAD_REQUEST,
 								message = "Group not found or storage problems.") })
 		public Response getGroup(@PathParam("name") String name) {
-			String identifier = group_prefix + "_" + name;
+			String identifier = contactStorerAgentPW + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -442,10 +452,12 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			Envelope env2 = null;
 			String id = "";
-			String identifier = group_prefix + "_" + name;
-			String identifier2 = group_prefix;
+			String identifier = contactStorerAgentPW + "_" + name;
+			String identifier2 = contactStorerAgentPW;
+			System.out.println("LELELE" +contactStorerAgentPW);
 			GroupAgent groupAgent;
 			ContactContainer cc = null;
+			UserAgent contactStorer = null;
 			try {
 				try {
 					Context.get().requestEnvelope(identifier);
@@ -464,15 +476,26 @@ public class ContactService extends RESTService {
 				}
 				// writing to user
 				try {
-					// try to add group to group list
-					env2 = Context.get().requestEnvelope(identifier2, Context.get().getServiceAgent());
-					cc = (ContactContainer) env2.getContent();
-				} catch (EnvelopeNotFoundException e) {
-					// create new group list
-					cc = new ContactContainer();
-					env2 = Context.get().createEnvelope(identifier2, Context.get().getServiceAgent());
-					env2.setPublic();
+					contactStorer =(UserAgent) Context.getCurrent().fetchAgent(Context.getCurrent()
+							.getUserAgentIdentifierByLoginName(contactStorerAgentName));
+					contactStorer.unlock(contactStorerAgentPW);
+					try {
+						// try to add group to group list
+						System.out.println("keki");
+						env2 = Context.get().requestEnvelope(identifier2, contactStorer);
+						cc = (ContactContainer) env2.getContent();
+						System.out.println(cc);
+					} catch (EnvelopeNotFoundException e) {
+						// create new group list
+						System.out.println("keko");
+						cc = new ContactContainer();
+						env2 = Context.get().createEnvelope(identifier2, contactStorer);
+						env2.setPublic();
+					}
+				} catch(Exception e) {
+					System.out.println("apparently no contact storer there or not unlockable");
 				}
+				
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -482,7 +505,9 @@ public class ContactService extends RESTService {
 
 			cc.addGroup(name, id);
 			env2.setContent(cc);
-			service.storeEnvelope(env2, Context.get().getServiceAgent());
+			if(contactStorer != null) {
+				service.storeEnvelope(env2, contactStorer);
+			} else System.out.println("Contactstorer is null!");
 			return Response.status(Status.OK).entity("" + id).build();
 		}
 
@@ -509,7 +534,7 @@ public class ContactService extends RESTService {
 		public Response removeGroup(@PathParam("name") String name) {
 			Envelope env = null;
 			try {
-				String identifier = group_prefix + "_" + name;
+				String identifier = contactStorerAgentPW + "_" + name;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				String groupID = cc.getGroups().get(name);

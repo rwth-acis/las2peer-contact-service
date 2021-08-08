@@ -43,10 +43,11 @@ public class ServiceTest {
 	private static UserAgentImpl agentAdam;
 	private static UserAgentImpl agentEve;
 	private static UserAgentImpl agentAbel;
+	private static UserAgentImpl agentContact;
 	private static final String passAdam = "adamspass";
 	private static final String passEve = "evespass";
 	private static final String passAbel = "abelspass";
-
+	private static final String passContact = "contacts";
 	private static final String mainPath = "contactservice/";
 	private static ServiceAgentImpl testService;
 	private static ServiceAgentImpl testService2;
@@ -54,7 +55,8 @@ public class ServiceTest {
 	/**
 	 * Called before the tests start.
 	 * 
-	 * Sets up the node and initializes connector and users that can be used throughout the tests.
+	 * Sets up the node and initializes connector and users that can be used
+	 * throughout the tests.
 	 * 
 	 * @throws Exception
 	 */
@@ -70,6 +72,12 @@ public class ServiceTest {
 		agentEve.unlock(passEve);
 		agentAbel = MockAgentFactory.getAbel();
 		agentAbel.unlock(passAbel);
+		agentContact = MockAgentFactory.getAbel();
+		agentContact.unlock(passAbel);
+		agentContact.changePassphrase(passContact);
+		agentContact.unlock(passContact);
+		agentContact.setLoginName("contactBoss");
+		node.storeAgent(agentContact);
 		node.storeAgent(agentAdam);
 		node.storeAgent(agentEve);
 		node.storeAgent(agentAbel);
@@ -99,7 +107,8 @@ public class ServiceTest {
 	}
 
 	/**
-	 * Called after the tests have finished. Shuts down the server and prints out the connector log file for reference.
+	 * Called after the tests have finished. Shuts down the server and prints out
+	 * the connector log file for reference.
 	 * 
 	 * @throws Exception
 	 */
