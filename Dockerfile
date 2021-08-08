@@ -15,7 +15,7 @@ WORKDIR /src
 # COPY --chown=las2peer:las2peer *.gradle gradle.* gradlew /src/
 # COPY --chown=las2peer:las2peer gradle /src/gradle
 #RUN ./gradlew --version
-RUN chmod -x ./gradlew && ./gradlew build --exclude-task test
+RUN chmod +x ./gradlew && ./gradlew build --exclude-task test
 
 
 RUN dos2unix /src/docker-entrypoint.sh
