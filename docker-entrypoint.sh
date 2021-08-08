@@ -24,7 +24,7 @@ echo ${SERVICE}
 echo ${CONTACT_STORER_NAME}
 echo ${CONTACT_STORER_PW}
 
-cd etc/ && ls && mkdir startup && ls && cd startup/ && touch passphrases.txt && ls && "agent-user-contact.xml;${CONTACT_STORER_PW}"  >> passphrases.txt
+cd etc/ && ls && mkdir startup && ls && cd startup/ && touch passphrases.txt && ls && echo "agent-user-contact.xml;${CONTACT_STORER_PW}"  >> passphrases.txt
 # set defaults for optional service parameters
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='contacts'
 
