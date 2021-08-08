@@ -24,6 +24,7 @@ echo ${SERVICE}
 echo ${CONTACT_STORER_NAME}
 echo ${CONTACT_STORER_PW}
 
+mkdir etc/startup
 touch /etc/startup/passphrases.txt
 echo "agent-user-contact.xml;${CONTACT_STORER_PW}"  >> /etc/startup/passphrases.txt
 # set defaults for optional service parameters
