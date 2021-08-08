@@ -10,7 +10,7 @@ fi
 NODE_ID_SEED=${NODE_ID_SEED:-$RANDOM}
 
 # set some helpful variables
-export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.mobsos.successModeling.MonitoringDataProvisionService.properties'
+export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.contactService.ContactService.properties'
 export SERVICE_PASSPHRASE_FILE='etc/startup/passphrases.txt'
 export WEB_CONNECTOR_PROPERTY_FILE='etc/i5.las2peer.connectors.webConnector.WebConnector.properties'
 export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' gradle.properties )
@@ -21,7 +21,8 @@ export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties
 
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
 echo ${SERVICE}
-
+echo ${CONTACT_STORER_NAME}
+echo ${CONTACT_STORER_PW}
 
 
 # set defaults for optional service parameters
@@ -66,8 +67,9 @@ if [[ ! -z "${BOOTSTRAP}" ]]; then
 fi
 
 # prevent glob expansion in lib/*
+java -cp lib/* i5.las2peer.tools.UserAgentGenerator ${CONTACT_STORER_PW} ${CONTACT_STORER_NAME} fake@emial.com > etc/startup/agent-user-contact.xml
 set -f
-LAUNCH_COMMAND='java -cp lib/* i5.las2peer.tools.UserAgentGenerator ${CONTACT_STORER_PW} ${CONTACT_STORER_NAME} > etc/startup/agent-user-contact.xml && java -cp lib/* i5.las2peer.tools.L2pNodeLauncher -s service -p '"${LAS2PEER_PORT} ${SERVICE_EXTRA_ARGS}"
+LAUNCH_COMMAND='java -cp lib/* i5.las2peer.tools.L2pNodeLauncher -s service -p '"${LAS2PEER_PORT} ${SERVICE_EXTRA_ARGS}"
 if [[ ! -z "${BOOTSTRAP}" ]]; then
     LAUNCH_COMMAND="${LAUNCH_COMMAND} -b ${BOOTSTRAP}"
 fi
