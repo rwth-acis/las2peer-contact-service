@@ -18,8 +18,8 @@ WORKDIR /src
 RUN chmod +x ./gradlew && ./gradlew build --exclude-task test
 
 
-RUN dos2unix /src/docker-entrypoint.sh
-RUN dos2unix /src/gradle.properties
+#RUN dos2unix /src/docker-entrypoint.sh
+#RUN dos2unix /src/gradle.properties
 EXPOSE $LAS2PEER_PORT
 
 RUN chmod +x /src/docker-entrypoint.sh

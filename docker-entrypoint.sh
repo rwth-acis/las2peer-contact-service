@@ -10,7 +10,7 @@ fi
 NODE_ID_SEED=${NODE_ID_SEED:-$RANDOM}
 
 # set some helpful variables
-export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.contactService.ContactService.properties'
+export SERVICE_PROPERTY_FILE='/etc/i5.las2peer.services.contactService.ContactService.properties'
 export SERVICE_PASSPHRASE_FILE='etc/startup/passphrases.txt'
 export WEB_CONNECTOR_PROPERTY_FILE='etc/i5.las2peer.connectors.webConnector.WebConnector.properties'
 export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' gradle.properties )
