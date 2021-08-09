@@ -97,8 +97,10 @@ public class ContactService extends RESTService {
 	private final static String contact_prefix = "contacts";
 	private final static String group_prefix = "groups";
 	private final static String address_prefix = "addressbook";
-	private static String contactStorerAgentName;
-	private static String contactStorerAgentPW;
+	private String contactStorerAgentName;
+	private String contactStorerAgentPW;
+	private static String contactStorerAgentNameStatic;
+	private static String contactStorerAgentPWStatic;
 
 	@Override
 	protected void initResources() {
@@ -109,6 +111,8 @@ public class ContactService extends RESTService {
 		getResourceConfig().register(PermissionResource.class);
 		getResourceConfig().register(NameResource.class);
 		setFieldValues();
+		contactStorerAgentNameStatic = contactStorerAgentName;
+		contactStorerAgentPWStatic = contactStorerAgentPW;
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////
@@ -288,14 +292,14 @@ public class ContactService extends RESTService {
 		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got a list of your groups."),
 				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getGroups() {
-			String identifier = contactStorerAgentPW;
+			String identifier = contactStorerAgentPWStatic;
 			JSONObject result = new JSONObject();
 			UserAgent contactStorer = null;
 			try {
 				try {
-					contactStorer = (UserAgent) Context.getCurrent()
-							.fetchAgent(Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentName));
-					contactStorer.unlock(contactStorerAgentPW);
+					contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+							Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+					contactStorer.unlock(contactStorerAgentPWStatic);
 				} catch (Exception e) {
 					System.out.println("apparently no contact storer there or not unlockable");
 				}
@@ -345,7 +349,7 @@ public class ContactService extends RESTService {
 		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Group found."),
 				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Group not found or storage problems.") })
 		public Response getGroup(@PathParam("name") String name) {
-			String identifier = contactStorerAgentPW + "_" + name;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -388,9 +392,9 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			Envelope env2 = null;
 			String id = "";
-			String identifier = contactStorerAgentPW + "_" + name;
-			String identifier2 = contactStorerAgentPW;
-			System.out.println("LELELE" + contactStorerAgentPW);
+			String identifier = contactStorerAgentPWStatic + "_" + name;
+			String identifier2 = contactStorerAgentPWStatic;
+			System.out.println("LELELE" + contactStorerAgentPWStatic);
 			GroupAgent groupAgent;
 			ContactContainer cc = null;
 			UserAgent contactStorer = null;
@@ -412,9 +416,9 @@ public class ContactService extends RESTService {
 				}
 				// writing to user
 				try {
-					contactStorer = (UserAgent) Context.getCurrent()
-							.fetchAgent(Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentName));
-					contactStorer.unlock(contactStorerAgentPW);
+					contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+							Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+					contactStorer.unlock(contactStorerAgentPWStatic);
 					try {
 						// try to add group to group list
 						System.out.println("keki");
@@ -464,7 +468,7 @@ public class ContactService extends RESTService {
 		public Response removeGroup(@PathParam("name") String name) {
 			Envelope env = null;
 			try {
-				String identifier = contactStorerAgentPW + "_" + name;
+				String identifier = contactStorerAgentPWStatic + "_" + name;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				String groupID = cc.getGroups().get(name);
