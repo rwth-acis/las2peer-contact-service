@@ -40,7 +40,7 @@ if [[ -z "${CONTACT_STORER_NAME}" ]]; then
     set_in_service_config contactStorerName "contactStorerName"
     ${CONTACT_STORER_NAME}  = "contactStorerName"
 else
-	set_in_service_config contactStorerName ${CONTACT_STORER_NAME}    
+	set_in_service_config contactStorerAgentName ${CONTACT_STORER_NAME}    
 fi
 
 if [[ -z "${CONTACT_STORER_PW}" ]]; then
@@ -48,7 +48,7 @@ if [[ -z "${CONTACT_STORER_PW}" ]]; then
     ${CONTACT_STORER_PW}  = "contactStorerPW"
 else
 	set_in_service_config contactStorerPW ${CONTACT_STORER_PW}  
-	set_in_passphrase_config contactStorerPW ${CONTACT_STORER_PW}
+	set_in_passphrase_config contactStorerAgentPW ${CONTACT_STORER_PW}
 fi
 
 
