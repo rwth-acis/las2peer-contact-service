@@ -47,8 +47,7 @@ if [[ -z "${CONTACT_STORER_PW}" ]]; then
     set_in_service_config contactStorerPW "contactStorerPW"
     ${CONTACT_STORER_PW}  = "contactStorerPW"
 else
-	set_in_service_config contactStorerPW ${CONTACT_STORER_PW}  
-	set_in_passphrase_config contactStorerAgentPW ${CONTACT_STORER_PW}
+	set_in_service_config contactStorerAgentPW ${CONTACT_STORER_PW}  
 fi
 
 
