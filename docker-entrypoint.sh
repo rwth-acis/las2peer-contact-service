@@ -36,20 +36,20 @@ function set_in_passphrase_config {
     sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${SERVICE_PASSPHRASE_FILE}
 }
 
-#if [[ -z "${CONTACT_STORER_NAME}" ]]; then
-#    set_in_service_config contactStorerName "contactStorerName"
-#    ${CONTACT_STORER_NAME}  = "contactStorerName"
-#else
-#	set_in_service_config contactStorerName ${CONTACT_STORER_NAME}    
-#fi
+if [[ -z "${CONTACT_STORER_NAME}" ]]; then
+    set_in_service_config contactStorerName "contactStorerName"
+    ${CONTACT_STORER_NAME}  = "contactStorerName"
+else
+	set_in_service_config contactStorerName ${CONTACT_STORER_NAME}    
+fi
 
-#if [[ -z "${CONTACT_STORER_PW}" ]]; then
-#    set_in_service_config contactStorerPW "contactStorerPW"
-#    ${CONTACT_STORER_PW}  = "contactStorerPW"
-#else
-#	set_in_service_config contactStorerPW ${CONTACT_STORER_PW}  
-#	set_in_passphrase_config contactStorerPW ${CONTACT_STORER_PW}
-#fi
+if [[ -z "${CONTACT_STORER_PW}" ]]; then
+    set_in_service_config contactStorerPW "contactStorerPW"
+    ${CONTACT_STORER_PW}  = "contactStorerPW"
+else
+	set_in_service_config contactStorerPW ${CONTACT_STORER_PW}  
+	set_in_passphrase_config contactStorerPW ${CONTACT_STORER_PW}
+fi
 
 
 # wait for any bootstrap host to be available
