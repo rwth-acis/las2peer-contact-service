@@ -101,5 +101,5 @@ if [[ -z "${@}" ]]; then
         exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector
     fi
 else
-    exec ${LAUNCH_COMMAND} ${@}
+    exec ${LAUNCH_COMMAND} uploadStartupDirectory ${@}
 fi
