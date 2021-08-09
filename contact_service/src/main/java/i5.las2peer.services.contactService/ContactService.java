@@ -579,7 +579,7 @@ public class ContactService extends RESTService {
 			Agent test = null;
 			GroupAgent groupAgent = null;
 			try {
-				String identifier = group_prefix + "_" + groupName;
+				String identifier = contactStorerAgentPWStatic + "_" + groupName;
 				// Get envelope
 				env = Context.get().requestEnvelope(identifier, Context.get().getMainAgent());
 				ContactContainer cc = (ContactContainer) env.getContent();
