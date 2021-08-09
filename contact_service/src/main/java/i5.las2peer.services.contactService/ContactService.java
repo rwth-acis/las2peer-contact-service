@@ -504,7 +504,7 @@ public class ContactService extends RESTService {
 				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getGroupMember(@PathParam("name") String name) {
 			JSONObject result = new JSONObject();
-			String identifier = group_prefix + "_" + name;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
