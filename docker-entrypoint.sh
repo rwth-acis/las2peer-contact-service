@@ -33,7 +33,7 @@ function set_in_service_config {
 }
 
 function set_in_passphrase_config {
-    sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${SERVICE_PASSPHRASE_FILE}
+    sed -i "s?${1}[[:blank:]]*;.*?${1};${2}?g" ${SERVICE_PASSPHRASE_FILE}
 }
 
 if [[ -z "${CONTACT_STORER_NAME}" ]]; then
@@ -49,6 +49,7 @@ if [[ -z "${CONTACT_STORER_PW}" ]]; then
 else
 	set_in_service_config contactStorerAgentPW ${CONTACT_STORER_PW}  
 fi
+set_in_passphrase_config agent-user-contact.xml ${CONTACT_STORER_PW} 
 
 
 # wait for any bootstrap host to be available
