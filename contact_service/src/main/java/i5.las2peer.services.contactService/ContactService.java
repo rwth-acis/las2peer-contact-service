@@ -394,7 +394,6 @@ public class ContactService extends RESTService {
 			String id = "";
 			String identifier = contactStorerAgentPWStatic + "_" + name;
 			String identifier2 = contactStorerAgentPWStatic;
-			System.out.println("LELELE" + contactStorerAgentPWStatic);
 			GroupAgent groupAgent;
 			ContactContainer cc = null;
 			UserAgent contactStorer = null;
@@ -421,13 +420,11 @@ public class ContactService extends RESTService {
 					contactStorer.unlock(contactStorerAgentPWStatic);
 					try {
 						// try to add group to group list
-						System.out.println("keki");
 						env2 = Context.get().requestEnvelope(identifier2, contactStorer);
 						cc = (ContactContainer) env2.getContent();
 						System.out.println(cc);
 					} catch (EnvelopeNotFoundException e) {
 						// create new group list
-						System.out.println("keko");
 						cc = new ContactContainer();
 						env2 = Context.get().createEnvelope(identifier2, contactStorer);
 						env2.setPublic();
@@ -448,7 +445,7 @@ public class ContactService extends RESTService {
 			if (contactStorer != null) {
 				service.storeEnvelope(env2, contactStorer);
 			} else
-				System.out.println("Contactstorer is null!");
+				logger.log(Level.SEVERE, "Contactstorer is Null!", e);
 			return Response.status(Status.OK).entity("" + id).build();
 		}
 
