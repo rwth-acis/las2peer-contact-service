@@ -445,7 +445,7 @@ public class ContactService extends RESTService {
 			if (contactStorer != null) {
 				service.storeEnvelope(env2, contactStorer);
 			} else
-				logger.log(Level.SEVERE, "Contactstorer is Null!", e);
+				logger.log(Level.SEVERE, "Contactstorer is Null!", "No stacktrace bro");
 			return Response.status(Status.OK).entity("" + id).build();
 		}
 
