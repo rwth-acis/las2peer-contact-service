@@ -118,7 +118,7 @@ task startscripts {
 
 contactStorerAgentName= grep 'contactStorerAgentName' $rootDir/etc/i5.las2peer.services.contactService.ContactService.properties|cut -d'=' -f2
 contactStorerAgentPW= grep 'contactStorerAgentPW' $rootDir/etc/i5.las2peer.services.contactService.ContactService.properties|cut -d'=' -f2
-echo "agent-user-contact.xml;${contactStorerAgentPW}"  | cat - etc/startup/passphrases.txt > temp && mv temp etc/startup/passphrases.txt
+echo "agent-user-contact.xml;\${contactStorerAgentPW}"  | cat - etc/startup/passphrases.txt > temp && mv temp etc/startup/passphrases.txt
 java -cp "lib/*" i5.las2peer.tools.UserAgentGenerator contactStorerPW contactStorerName > $rootDir/etc/startup/agent-user-contact.xml && java -cp "lib/*" i5.las2peer.tools.L2pNodeLauncher --port 9011 --service-directory service uploadStartupDirectory startService\\(\\'${project.property('service.name')}.${project.property('service.class')}@${project.property('service.version')}\\'\\) startWebConnector interactive
 """
     new File("$rootDir/bin", "start_network.bat").text = """
@@ -143,7 +143,7 @@ For /F "tokens=1* delims==" %%A IN (%BASE%/etc/i5.las2peer.services.contactServi
 IF "%contactStorerAgentName%"=="" set contactStorerAgentName=contactStorerName
 IF "%contactStorerAgentPW%"=="" set contactStorerAgentPW=contactStorerPW
 
-echo agent-user-contact.xml;%contactStorerAgentPW% >> %BASE%\etc\startup\passphrases.txt
+echo agent-user-contact.xml;%contactStorerAgentPW% >> %BASE%/etc/startup/passphrases.txt
 java -cp %CLASSPATH% i5.las2peer.tools.UserAgentGenerator %contactStorerAgentPW% %contactStorerAgentName%  > %BASE%/etc/startup/agent-user-contact.xml && java -cp %CLASSPATH% i5.las2peer.tools.L2pNodeLauncher --port 9011 --service-directory service uploadStartupDirectory startService('${project.property('service.name')}.${project.property('service.class')}@${project.property('service.version')}') startWebConnector interactive
 
 pause
