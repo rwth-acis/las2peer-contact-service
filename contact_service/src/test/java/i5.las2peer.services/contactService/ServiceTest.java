@@ -5,9 +5,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +32,7 @@ import i5.las2peer.testing.TestSuite;
  * Example Test Class demonstrating a basic JUnit test structure.
  *
  */
+
 public class ServiceTest {
 
 	private static final String HTTP_ADDRESS = "http://127.0.0.1";
@@ -62,7 +65,16 @@ public class ServiceTest {
 	 */
 	@Before
 	public void startServer() throws Exception {
+		Properties prop = new Properties();
+		ClassLoader loader = Thread.currentThread().getContextClassLoader();
+		InputStream stream = loader
+				.getResourceAsStream("etc/i5.las2peer.services.contactService.ContactService.properties");
+		try {
+			prop.load(stream);
+			System.out.println("poop is" + prop.getProperty("contactAgentStorerName"));
+		} catch (Exception e) {
 
+		}
 		// start node
 		nodes = TestSuite.launchNetwork(1, STORAGE_MODE.FILESYSTEM, true);
 		node = nodes.get(0);
