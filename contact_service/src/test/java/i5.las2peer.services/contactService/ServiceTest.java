@@ -5,6 +5,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -50,7 +52,7 @@ public class ServiceTest {
 	private static final String passAdam = "adamspass";
 	private static final String passEve = "evespass";
 	private static final String passAbel = "abelspass";
-	private static final String passContact = "contactStorerPW";
+	private static String passContact = "";
 	private static final String mainPath = "contactservice/";
 	private static ServiceAgentImpl testService;
 	private static ServiceAgentImpl testService2;
@@ -66,14 +68,16 @@ public class ServiceTest {
 	@Before
 	public void startServer() throws Exception {
 		Properties prop = new Properties();
-		ClassLoader loader = Thread.currentThread().getContextClassLoader();
-		InputStream stream = loader
-				.getResourceAsStream("etc/i5.las2peer.services.contactService.ContactService.properties");
+		String contactAgentName = "";
+		System.out.println("poop is");
 		try {
-			prop.load(stream);
-			System.out.println("poop is" + prop.getProperty("contactAgentStorerName"));
-		} catch (Exception e) {
+			prop.load(new FileInputStream("etc/i5.las2peer.services.contactService.ContactService.properties"));
+			passContact = prop.getProperty("contactStorerAgentPW");
+			contactAgentName = prop.getProperty("contactStorerAgentName");
 
+		} catch (IOException e) {
+			System.out.println(e + "was error");
+			e.printStackTrace();
 		}
 		// start node
 		nodes = TestSuite.launchNetwork(1, STORAGE_MODE.FILESYSTEM, true);
@@ -84,11 +88,12 @@ public class ServiceTest {
 		agentEve.unlock(passEve);
 		agentAbel = MockAgentFactory.getAbel();
 		agentAbel.unlock(passAbel);
-		agentContact = MockAgentFactory.getAbel();
-		agentContact.unlock(passAbel);
-		agentContact.changePassphrase(passContact);
+		agentContact = UserAgentImpl.createUserAgent(passContact);
+		agentContact.unlock(passContact);
 		// agentContact.unlock(passContact);
-		agentContact.setLoginName("contactStorerName");
+		agentContact.setLoginName(contactAgentName);
+		System.out.println("pope" + agentContact.getPassphrase() + agentContact.getLoginName() + passContact + "wtf"
+				+ agentContact.getIdentifier() + agentAbel.getIdentifier());
 		node.storeAgent(agentContact);
 		node.storeAgent(agentAdam);
 		node.storeAgent(agentEve);
@@ -98,7 +103,6 @@ public class ServiceTest {
 		testService = ServiceAgentImpl.createServiceAgent(
 				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.4"), "a pass");
 		testService.unlock("a pass");
-
 		testService2 = ServiceAgentImpl.createServiceAgent(ServiceNameVersion
 				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.5"), "a pass");
 		testService2.unlock("a pass");
@@ -148,6 +152,7 @@ public class ServiceTest {
 
 	@Test
 	public void testAddRemoveContact() {
+
 		MiniClient c = new MiniClient();
 		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
@@ -396,7 +401,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentEve.unlock(passEve);
-			String identifier = passAbel + "_testGroup";
+			String identifier = passContact + "_testGroup";
 			createEnvelope(identifier, agentEve);
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(400, result.getHttpCode());
@@ -414,7 +419,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentAdam.unlock(passAdam);
-			String identifier = passAbel + "_testGroup";
+			String identifier = passContact + "_testGroup";
 			ContactContainer cc = new ContactContainer();
 			cc.addGroup("testGroup", "1337");
 			createEnvelopeWithContent(identifier, agentAdam, cc);
@@ -699,8 +704,8 @@ public class ServiceTest {
 			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
 
 			// Blocking groups
-			createEnvelope(passAbel, agentEve);
-			createEnvelope(passAbel + "_test", agentEve);
+			createEnvelope(passContact, agentEve);
+			createEnvelope(passContact + "_test", agentEve);
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
 					new HashMap<String, String>());
