@@ -47,7 +47,7 @@ public class ServiceTest {
 	private static final String passAdam = "adamspass";
 	private static final String passEve = "evespass";
 	private static final String passAbel = "abelspass";
-	private static final String passContact = "contacts";
+	private static final String passContact = "contactStorerPW";
 	private static final String mainPath = "contactservice/";
 	private static ServiceAgentImpl testService;
 	private static ServiceAgentImpl testService2;
@@ -75,8 +75,8 @@ public class ServiceTest {
 		agentContact = MockAgentFactory.getAbel();
 		agentContact.unlock(passAbel);
 		agentContact.changePassphrase(passContact);
-		agentContact.unlock(passContact);
-		agentContact.setLoginName("contactBoss");
+		// agentContact.unlock(passContact);
+		agentContact.setLoginName("contactStorerName");
 		node.storeAgent(agentContact);
 		node.storeAgent(agentAdam);
 		node.storeAgent(agentEve);
@@ -90,7 +90,6 @@ public class ServiceTest {
 		testService2 = ServiceAgentImpl.createServiceAgent(ServiceNameVersion
 				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.5"), "a pass");
 		testService2.unlock("a pass");
-
 		node.registerReceiver(testService);
 		node.registerReceiver(testService2);
 
@@ -385,7 +384,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentEve.unlock(passEve);
-			String identifier = "groups_testGroup";
+			String identifier = passAbel + "_testGroup";
 			createEnvelope(identifier, agentEve);
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(400, result.getHttpCode());
@@ -403,7 +402,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentAdam.unlock(passAdam);
-			String identifier = "groups_testGroup";
+			String identifier = passAbel + "_testGroup";
 			ContactContainer cc = new ContactContainer();
 			cc.addGroup("testGroup", "1337");
 			createEnvelopeWithContent(identifier, agentAdam, cc);
@@ -465,10 +464,13 @@ public class ServiceTest {
 			EnvelopeVersion stored = node
 					.fetchEnvelope(testService.getServiceNameVersion().getName() + "$" + "addressbook");
 			ContactContainer cc = (ContactContainer) stored.getContent();
+			System.out.println("1");
 			cc.addContact("1337");
+			System.out.println("2");
 			EnvelopeVersion env = node.createUnencryptedEnvelope(stored, cc);
-			node.storeEnvelope(env, testService);
-
+			System.out.println("3");
+			node.storeEnvelope(env, agentContact);
+			System.out.println("4");
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			result6 = c.sendRequest("GET", mainPath + "addressbook", "");
 			assertEquals(200, result6.getHttpCode());
@@ -685,8 +687,8 @@ public class ServiceTest {
 			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
 
 			// Blocking groups
-			createEnvelope("groups", agentEve);
-			createEnvelope("groups_test", agentEve);
+			createEnvelope(passAbel, agentEve);
+			createEnvelope(passAbel + "_test", agentEve);
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
 					new HashMap<String, String>());

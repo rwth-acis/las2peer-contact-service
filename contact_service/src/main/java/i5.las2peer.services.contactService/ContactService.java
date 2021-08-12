@@ -397,6 +397,7 @@ public class ContactService extends RESTService {
 			GroupAgent groupAgent;
 			ContactContainer cc = null;
 			UserAgent contactStorer = null;
+			logger.log(Level.SEVERE, "Can't persist to network storage!ugauga" + identifier2, "ugauga");
 			try {
 				try {
 					Context.get().requestEnvelope(identifier);
@@ -415,9 +416,12 @@ public class ContactService extends RESTService {
 				}
 				// writing to user
 				try {
+					logger.log(Level.SEVERE, "agentcoming" + identifier2, "ugauga");
 					contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
 							Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+					logger.log(Level.SEVERE, "wherebla" + identifier2, "ugauga");
 					contactStorer.unlock(contactStorerAgentPWStatic);
+					logger.log(Level.SEVERE, "whereagent" + identifier2, "ugauga");
 					try {
 						// try to add group to group list
 						env2 = Context.get().requestEnvelope(identifier2, contactStorer);
@@ -431,6 +435,7 @@ public class ContactService extends RESTService {
 					}
 				} catch (Exception e) {
 					System.out.println("apparently no contact storer there or not unlockable");
+					logger.log(Level.SEVERE, "wrong" + identifier2, e);
 				}
 
 			} catch (Exception e) {
@@ -465,6 +470,7 @@ public class ContactService extends RESTService {
 		public Response removeGroup(@PathParam("name") String name) {
 			Envelope env = null;
 			try {
+
 				String identifier = contactStorerAgentPWStatic + "_" + name;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
@@ -616,7 +622,7 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			GroupAgent groupAgent = null;
 			try {
-				String identifier = group_prefix + "_" + groupName;
+				String identifier = contactStorerAgentPWStatic + "_" + groupName;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				try {
@@ -663,15 +669,19 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			boolean added = false;
 			ContactContainer cc = null;
+			UserAgent contactStorer = null;
 			try {
+				contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+						Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+				contactStorer.unlock(contactStorerAgentPWStatic);
 				try {
-					env = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().requestEnvelope(identifier, contactStorer);
 					cc = (ContactContainer) env.getContent();
 					added = cc.addContact(owner.getIdentifier());
 				} catch (EnvelopeNotFoundException ex) {
 					cc = new ContactContainer();
 					added = cc.addContact(owner.getIdentifier());
-					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().createEnvelope(identifier, contactStorer);
 					env.setPublic();
 				}
 			} catch (Exception e) {
@@ -682,7 +692,7 @@ public class ContactService extends RESTService {
 			}
 
 			env.setContent(cc);
-			service.storeEnvelope(env, Context.get().getServiceAgent());
+			service.storeEnvelope(env, contactStorer);
 			if (added) {
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
 			} else {
@@ -706,15 +716,19 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			ContactContainer cc = null;
 			boolean deleted = false;
+			UserAgent contactStorer = null;
 			try {
+				contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+						Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+				contactStorer.unlock(contactStorerAgentPWStatic);
 				try {
-					env = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().requestEnvelope(identifier, contactStorer);
 					cc = (ContactContainer) env.getContent();
 					String userID = Context.get().getMainAgent().getIdentifier();
 					deleted = cc.removeContact(userID);
 				} catch (EnvelopeNotFoundException ex) {
 					cc = new ContactContainer();
-					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().createEnvelope(identifier, contactStorer);
 					env.setPublic();
 				}
 			} catch (Exception e) {
@@ -725,7 +739,7 @@ public class ContactService extends RESTService {
 			}
 
 			env.setContent(cc);
-			service.storeEnvelope(env, Context.get().getServiceAgent());
+			service.storeEnvelope(env, contactStorer);
 			if (deleted) {
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
@@ -747,9 +761,13 @@ public class ContactService extends RESTService {
 		public Response getAddressBook() {
 			String identifier = address_prefix;
 			JSONObject result = new JSONObject();
+			UserAgent contactStorer = null;
 			try {
+				contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+						Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+				contactStorer.unlock(contactStorerAgentPWStatic);
 				try {
-					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					Envelope stored = Context.get().requestEnvelope(identifier, contactStorer);
 					ContactContainer cc = (ContactContainer) stored.getContent();
 					HashSet<String> list = cc.getUserList();
 					UserAgent user;
@@ -766,10 +784,10 @@ public class ContactService extends RESTService {
 				} catch (EnvelopeNotFoundException ex) {
 					Envelope env = null;
 					ContactContainer cc = new ContactContainer();
-					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().createEnvelope(identifier, contactStorer);
 					env.setPublic();
 					env.setContent(cc);
-					service.storeEnvelope(env, Context.get().getServiceAgent());
+					service.storeEnvelope(env, contactStorer);
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
