@@ -76,8 +76,15 @@ compileJava {
 }
 
 compileTestJava {
+	dependsOn "copyEtc"
     dependsOn "copyTest"
 }
+
+task copyEtc(type: Copy) {
+    from "$rootDir/etc/i5.las2peer.services.contactService.ContactService.properties"
+    into "$rootDir/contact_service/etc/"
+}
+
 
 // Copies .xml files into build directory
 task copyMain(type: Copy) {
