@@ -24,8 +24,8 @@ echo ${SERVICE}
 echo ${CONTACT_STORER_NAME}
 echo ${CONTACT_STORER_PW}
 
-touch etc/startup/passphrases.txt
-echo "agent-user-contact.xml;${CONTACT_STORER_PW}" >> etc/startup/passphrases.txt
+echo "agent-user-contact.xml;${CONTACT_STORER_PW}"  | cat - etc/startup/passphrases.txt > temp && mv temp etc/startup/passphrases.txt
+
 # set defaults for optional service parameters
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='contacts'
 
@@ -34,23 +34,23 @@ function set_in_service_config {
 }
 
 function set_in_passphrase_config {
-    sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${SERVICE_PASSPHRASE_FILE}
+    sed -i "s?${1}[[:blank:]]*;.*?${1};${2}?g" ${SERVICE_PASSPHRASE_FILE}
 }
 
 if [[ -z "${CONTACT_STORER_NAME}" ]]; then
     set_in_service_config contactStorerName "contactStorerName"
     ${CONTACT_STORER_NAME}  = "contactStorerName"
 else
-	set_in_service_config contactStorerName ${CONTACT_STORER_NAME}    
+	set_in_service_config contactStorerAgentName ${CONTACT_STORER_NAME}    
 fi
 
 if [[ -z "${CONTACT_STORER_PW}" ]]; then
     set_in_service_config contactStorerPW "contactStorerPW"
     ${CONTACT_STORER_PW}  = "contactStorerPW"
 else
-	set_in_service_config contactStorerPW ${CONTACT_STORER_PW}  
-	set_in_passphrase_config contactStorerPW ${CONTACT_STORER_PW}
+	set_in_service_config contactStorerAgentPW ${CONTACT_STORER_PW}  
 fi
+set_in_passphrase_config agent-user-contact.xml ${CONTACT_STORER_PW} 
 
 
 # wait for any bootstrap host to be available
@@ -100,8 +100,10 @@ if [[ -z "${@}" ]]; then
     if [ -n "$LAS2PEER_ETH_HOST" ]; then
         exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED --ethereum-mnemonic "$(selectMnemonic)" uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()"
     else
-        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector
+        echo test
+        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\)  startWebConnector
     fi
 else
-    exec ${LAUNCH_COMMAND} ${@}
+    echo okkk
+    exec ${LAUNCH_COMMAND} uploadStartupDirectory ${@}
 fi
