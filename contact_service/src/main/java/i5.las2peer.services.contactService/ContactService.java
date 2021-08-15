@@ -311,6 +311,7 @@ public class ContactService extends RESTService {
 					String groupId = "";
 					for (String s : groupNames) {
 						try {
+							System.out.println(s);
 							groupId = cc.getGroupId(s);
 							Context.get().requestAgent(groupId);
 							result.put(groupId, s);
