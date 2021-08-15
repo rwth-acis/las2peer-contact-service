@@ -55,3 +55,67 @@ Features
 * Add, delete groups
 * Add member to groups
 * Edit your user information (name, userpicture)
+
+
+How to run using Docker
+-------------------
+
+First build the image:
+```bash
+docker build -t contact-service . 
+```
+
+Then you can run the image like this:
+
+```bash
+docker run -e CONTACT_STORER_PW=*pw* -e CONTACT_STORER_NAME=*name* -p 8080:8080 -p 9011:9011 contact-service:latest
+```
+
+Replace *pw* and *name* with the username and password of the las2peer agent which should store the group information.
+Note that if used to store groups once, the credentials for the agent should not change, otherwise the group data will be lost. 
+The REST-API will be available via *http://localhost:8080/contactservice* and the las2peer node is available via port 9011.
+
+In order to customize your setup you can set further environment variables.
+
+### Node Launcher Variables
+
+Set [las2peer node launcher options](https://github.com/rwth-acis/las2peer-Template-Project/wiki/L2pNodeLauncher-Commands#at-start-up) with these variables.
+The las2peer port is fixed at *9011*.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| BOOTSTRAP | unset | Set the --bootstrap option to bootrap with existing nodes. The container will wait for any bootstrap node to be available before continuing. |
+| SERVICE_PASSPHRASE | processing | Set the second argument in *startService('<service@version>', '<SERVICE_PASSPHRASE>')*. |
+| SERVICE_EXTRA_ARGS | unset | Set additional launcher arguments. Example: ```--observer``` to enable monitoring. |
+
+### Service Variables
+
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| CONTACT_STORER_PW | *mandatory* | password of las2peer agent|
+| CONTACT_STORER_NAME | *mandatory* | login name of las2peer agent|
+
+
+
+### Web Connector Variables
+
+Set [WebConnector properties](https://github.com/rwth-acis/las2peer-Template-Project/wiki/WebConnector-Configuration) with these variables.
+*httpPort* and *httpsPort* are fixed at *8080* and *8443*.
+
+| Variable | Default |
+|----------|---------|
+| START_HTTP | TRUE |
+| START_HTTPS | FALSE |
+| SSL_KEYSTORE | "" |
+| SSL_KEY_PASSWORD | "" |
+| CROSS_ORIGIN_RESOURCE_DOMAIN | * |
+| CROSS_ORIGIN_RESOURCE_MAX_AGE | 60 |
+| ENABLE_CROSS_ORIGIN_RESOURCE_SHARING | TRUE |
+| OIDC_PROVIDERS | https://api.learning-layers.eu/o/oauth2,https://accounts.google.com |
+
+### Other Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| DEBUG  | unset | Set to any value to get verbose output in the container entrypoint script. |

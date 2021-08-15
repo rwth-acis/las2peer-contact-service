@@ -25,6 +25,7 @@ echo ${CONTACT_STORER_NAME}
 echo ${CONTACT_STORER_PW}
 
 echo "agent-user-contact.xml;${CONTACT_STORER_PW}"  | cat - etc/startup/passphrases.txt > temp && mv temp etc/startup/passphrases.txt
+
 # set defaults for optional service parameters
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='contacts'
 
