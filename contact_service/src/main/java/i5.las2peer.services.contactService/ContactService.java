@@ -113,6 +113,7 @@ public class ContactService extends RESTService {
 		setFieldValues();
 		contactStorerAgentNameStatic = contactStorerAgentName;
 		contactStorerAgentPWStatic = contactStorerAgentPW;
+
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////
@@ -310,6 +311,7 @@ public class ContactService extends RESTService {
 					String groupId = "";
 					for (String s : groupNames) {
 						try {
+							System.out.println(s);
 							groupId = cc.getGroupId(s);
 							Context.get().requestAgent(groupId);
 							result.put(groupId, s);
@@ -542,7 +544,7 @@ public class ContactService extends RESTService {
 				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getGroupId(@PathParam("name") String name) {
 			JSONObject result = new JSONObject();
-			String identifier = group_prefix + "_" + name;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
