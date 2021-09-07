@@ -7,6 +7,8 @@ if [[ ! -z "${DEBUG}" ]]; then
     set -x
 fi
 
+NODE_ID_SEED=${NODE_ID_SEED:-$RANDOM}
+
 # set some helpful variables
 export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' etc/ant_configuration/service.properties)
 export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' etc/ant_configuration/service.properties)
@@ -37,7 +39,7 @@ fi
 # start the service within a las2peer node
 if [[ -z "${@}" ]]
 then
-  exec ${LAUNCH_COMMAND} --observer startService\("'""${SERVICE}""'", "'"contacts"'"\) startWebConnector
+    exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED startService\("'""${SERVICE}""'", "'"contacts"'"\) startWebConnector
 else
-  exec ${LAUNCH_COMMAND} ${@}
+    exec ${LAUNCH_COMMAND} --node-id-seed $NODE_ID_SEED ${@}
 fi
