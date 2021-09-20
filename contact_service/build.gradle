@@ -151,6 +151,28 @@ pause
 """
 }
 
+
+task export (type: Copy, dependsOn: build) {
+    into "$buildDir/export"
+
+    into("service") {
+        from jar
+    }
+    into("lib") {
+        from configurations.compileOnly
+    }
+    into("bin") {
+        from "../bin"
+    }
+    into("etc") {
+        from "../etc"
+    }
+    into("javadoc") {
+        from "$buildDir/docs/javadoc"
+    }
+}
+
+
 build.dependsOn "startscripts"
 
 def startup = "$rootDir/etc/startup"
