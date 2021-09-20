@@ -34,10 +34,11 @@ COPY --chown=las2peer:las2peer gradle.properties /src/gradle.properties
 RUN true
 COPY --chown=las2peer:las2peer gradle.properties /src/etc/pastry.properties
 RUN true
-RUN chmod +x docker-entrypoint.sh
-
-RUN dos2unix docker-entrypoint.sh
-RUN dos2unix gradle.properties
+# Get gradle distribution
+# COPY --chown=las2peer:las2peer *.gradle gradle.* gradlew /src/
+# COPY --chown=las2peer:las2peer gradle /src/gradle
+#RUN dos2unix /src/docker-entrypoint.sh
+#RUN dos2unix /src/gradle.properties
 # RUN dos2unix etc/ant_configuration/service.properties
 # run the rest as unprivileged user
 RUN chmod +x gradlew && ./gradlew build --exclude-task test

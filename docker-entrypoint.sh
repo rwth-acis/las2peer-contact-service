@@ -10,7 +10,8 @@ fi
 NODE_ID_SEED=${NODE_ID_SEED:-$RANDOM}
 
 # set some helpful variables
-export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.mobsos.successModeling.MonitoringDataProvisionService.properties'
+export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.contactService.ContactService.properties'
+export SERVICE_PASSPHRASE_FILE='etc/startup/passphrases.txt'
 export WEB_CONNECTOR_PROPERTY_FILE='etc/i5.las2peer.connectors.webConnector.WebConnector.properties'
 export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' gradle.properties )
 export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' gradle.properties )
@@ -20,9 +21,37 @@ export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties
 
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
 echo ${SERVICE}
+echo ${CONTACT_STORER_NAME}
+echo ${CONTACT_STORER_PW}
+
+echo "agent-user-contact.xml;${CONTACT_STORER_PW}"  | cat - etc/startup/passphrases.txt > temp && mv temp etc/startup/passphrases.txt
 
 # set defaults for optional service parameters
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='contacts'
+
+function set_in_service_config {
+    sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${SERVICE_PROPERTY_FILE}
+}
+
+function set_in_passphrase_config {
+    sed -i "s?${1}[[:blank:]]*;.*?${1};${2}?g" ${SERVICE_PASSPHRASE_FILE}
+}
+
+if [[ -z "${CONTACT_STORER_NAME}" ]]; then
+    set_in_service_config contactStorerName "contactStorerName"
+    ${CONTACT_STORER_NAME}  = "contactStorerName"
+else
+	set_in_service_config contactStorerAgentName ${CONTACT_STORER_NAME}    
+fi
+
+if [[ -z "${CONTACT_STORER_PW}" ]]; then
+    set_in_service_config contactStorerPW "contactStorerPW"
+    ${CONTACT_STORER_PW}  = "contactStorerPW"
+else
+	set_in_service_config contactStorerAgentPW ${CONTACT_STORER_PW}  
+fi
+set_in_passphrase_config agent-user-contact.xml ${CONTACT_STORER_PW} 
+
 
 # wait for any bootstrap host to be available
 if [[ ! -z "${BOOTSTRAP}" ]]; then
@@ -39,6 +68,7 @@ if [[ ! -z "${BOOTSTRAP}" ]]; then
 fi
 
 # prevent glob expansion in lib/*
+java -cp lib/* i5.las2peer.tools.UserAgentGenerator ${CONTACT_STORER_PW} ${CONTACT_STORER_NAME} fake@emial.com > etc/startup/agent-user-contact.xml
 set -f
 LAUNCH_COMMAND='java -cp lib/* i5.las2peer.tools.L2pNodeLauncher -s service -p '"${LAS2PEER_PORT} ${SERVICE_EXTRA_ARGS}"
 if [[ ! -z "${BOOTSTRAP}" ]]; then
@@ -70,8 +100,10 @@ if [[ -z "${@}" ]]; then
     if [ -n "$LAS2PEER_ETH_HOST" ]; then
         exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED --ethereum-mnemonic "$(selectMnemonic)" uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()"
     else
-        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector
+        echo test
+        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\)  startWebConnector
     fi
 else
-    exec ${LAUNCH_COMMAND} ${@}
+    echo okkk
+    exec ${LAUNCH_COMMAND} uploadStartupDirectory ${@}
 fi

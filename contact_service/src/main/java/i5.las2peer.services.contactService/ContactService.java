@@ -18,6 +18,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import i5.las2peer.api.Context;
+import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.persistency.Envelope;
 import i5.las2peer.api.persistency.EnvelopeException;
 import i5.las2peer.api.persistency.EnvelopeNotFoundException;
@@ -29,6 +30,7 @@ import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.logging.L2pLogger;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
+import i5.las2peer.security.BotAgent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -43,8 +45,9 @@ import net.minidev.json.parser.JSONParser;
 /**
  * las2peer Contact Service
  * 
- * This service can manage your las2peer contacts and groups. It uses the las2peer Web-Connector for RESTful access to
- * it. The service has the following features:
+ * This service can manage your las2peer contacts and groups. It uses the
+ * las2peer Web-Connector for RESTful access to it. The service has the
+ * following features:
  * 
  * <p>
  * ContactResource:
@@ -84,6 +87,7 @@ import net.minidev.json.parser.JSONParser;
  * @version 0.2.4
  */
 @ServicePath("contactservice")
+@ManualDeployment
 public class ContactService extends RESTService {
 
 	private static final String USER_INFORMATION_SERVICE = "i5.las2peer.services.userInformationService.UserInformationService@0.2.5";
@@ -93,6 +97,10 @@ public class ContactService extends RESTService {
 	private final static String contact_prefix = "contacts";
 	private final static String group_prefix = "groups";
 	private final static String address_prefix = "addressbook";
+	private String contactStorerAgentName;
+	private String contactStorerAgentPW;
+	private static String contactStorerAgentNameStatic;
+	private static String contactStorerAgentPWStatic;
 
 	@Override
 	protected void initResources() {
@@ -102,27 +110,18 @@ public class ContactService extends RESTService {
 		getResourceConfig().register(UserResource.class);
 		getResourceConfig().register(PermissionResource.class);
 		getResourceConfig().register(NameResource.class);
+		setFieldValues();
+		contactStorerAgentNameStatic = contactStorerAgentName;
+		contactStorerAgentPWStatic = contactStorerAgentPW;
+
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// Service methods.
 	// //////////////////////////////////////////////////////////////////////////////////////
 	@Path("/") // this is the root resource
-	@Api(
-			value = "Contact Resource")
-	@SwaggerDefinition(
-			info = @Info(
-					title = "laspeer Contact Service",
-					version = "0.2.4",
-					description = "A las2peer Contact Service for managing your contacts and groups.",
-					termsOfService = "",
-					contact = @Contact(
-							name = "Alexander Neumann",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
-							email = "neumann@dbis.rwth-aachen.de"),
-					license = @License(
-							name = "ACIS License (BSD3)",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	@Api(value = "Contact Resource")
+	@SwaggerDefinition(info = @Info(title = "laspeer Contact Service", version = "0.2.4", description = "A las2peer Contact Service for managing your contacts and groups.", termsOfService = "", contact = @Contact(name = "Alexander Neumann", url = "https://github.com/rwth-acis/las2peer-Contact-Service", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "ACIS License (BSD3)", url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class ContactResource {
 		ContactService service = (ContactService) Context.get().getService();
 
@@ -134,16 +133,10 @@ public class ContactService extends RESTService {
 		 */
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(
-				value = "Get Contacts",
-				notes = "Get all your contacts.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got a list of your contacts."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems.") })
+		@ApiOperation(value = "Get Contacts", notes = "Get all your contacts.")
+		@ApiResponses(value = {
+				@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got a list of your contacts."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getContacts() {
 			Agent owner = Context.get().getMainAgent();
 			String identifier = contact_prefix + "_" + owner.getIdentifier();
@@ -178,7 +171,8 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Adds a contact to your list. Information is stored in an envelope which holds all your contacts.
+		 * Adds a contact to your list. Information is stored in an envelope which holds
+		 * all your contacts.
 		 * 
 		 * @param name Login name of the contact you want to add
 		 * @return Returns a Response
@@ -187,19 +181,10 @@ public class ContactService extends RESTService {
 		@POST
 		@Path("{name}")
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiOperation(
-				value = "Add Contact",
-				notes = "Add a contact to your contact list.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Contact added."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Contact already in list or storage problems."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_NOT_FOUND,
-								message = "Agent does not exist.") })
+		@ApiOperation(value = "Add Contact", notes = "Add a contact to your contact list.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Contact added."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Contact already in list or storage problems."),
+				@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Agent does not exist.") })
 		public Response addContact(@PathParam("name") String name) {
 			// Setting owner and identifier for envelope
 			Agent owner = Context.get().getMainAgent();
@@ -252,19 +237,10 @@ public class ContactService extends RESTService {
 		@DELETE
 		@Path("{name}")
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Contact removed."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Contact not in list or storage problems."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_NOT_FOUND,
-								message = "Agent does not exist.") })
-		@ApiOperation(
-				value = "Remove Contact",
-				notes = "Removes a contact from your contact list.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Contact removed."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Contact not in list or storage problems."),
+				@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Agent does not exist.") })
+		@ApiOperation(value = "Remove Contact", notes = "Removes a contact from your contact list.")
 		public Response removeContact(@PathParam("name") String name) {
 			Agent owner = Context.get().getMainAgent();
 			String identifier = contact_prefix + "_" + owner.getIdentifier();
@@ -300,21 +276,8 @@ public class ContactService extends RESTService {
 	}
 
 	@Path("/groups") // this is the root resource
-	@Api(
-			value = "Group Resource")
-	@SwaggerDefinition(
-			info = @Info(
-					title = "laspeer Contact Service",
-					version = "0.1",
-					description = "A las2peer Contact Service for managing your contacts and groups.",
-					termsOfService = "",
-					contact = @Contact(
-							name = "Alexander Neumann",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
-							email = "neumann@dbis.rwth-aachen.de"),
-					license = @License(
-							name = "ACIS License (BSD3)",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	@Api(value = "Group Resource")
+	@SwaggerDefinition(info = @Info(title = "laspeer Contact Service", version = "0.1", description = "A las2peer Contact Service for managing your contacts and groups.", termsOfService = "", contact = @Contact(name = "Alexander Neumann", url = "https://github.com/rwth-acis/las2peer-Contact-Service", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "ACIS License (BSD3)", url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class GroupResource {
 		ContactService service = (ContactService) Context.get().getService();
 
@@ -326,27 +289,29 @@ public class ContactService extends RESTService {
 		 */
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(
-				value = "Get Groups",
-				notes = "Get all your Groups.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got a list of your groups."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems.") })
+		@ApiOperation(value = "Get Groups", notes = "Get all your Groups.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got a list of your groups."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getGroups() {
-			String identifier = group_prefix;
+			String identifier = contactStorerAgentPWStatic;
 			JSONObject result = new JSONObject();
+			UserAgent contactStorer = null;
 			try {
 				try {
-					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+							Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+					contactStorer.unlock(contactStorerAgentPWStatic);
+				} catch (Exception e) {
+					System.out.println("apparently no contact storer there or not unlockable");
+				}
+				try {
+					Envelope stored = Context.get().requestEnvelope(identifier, contactStorer);
 					ContactContainer cc = (ContactContainer) stored.getContent();
 					Set<String> groupNames = cc.getGroups().keySet();
 					String groupId = "";
 					for (String s : groupNames) {
 						try {
+							System.out.println(s);
 							groupId = cc.getGroupId(s);
 							Context.get().requestAgent(groupId);
 							result.put(groupId, s);
@@ -361,7 +326,7 @@ public class ContactService extends RESTService {
 					env = Context.get().createEnvelope(identifier);
 					env.setPublic();
 					env.setContent(cc);
-					service.storeEnvelope(env, Context.get().getServiceAgent());
+					service.storeEnvelope(env, contactStorer);
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
@@ -382,18 +347,11 @@ public class ContactService extends RESTService {
 		@GET
 		@Path("/{name}")
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(
-				value = "Get Group from Name",
-				notes = "Get a group via name.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Group found."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Group not found or storage problems.") })
+		@ApiOperation(value = "Get Group from Name", notes = "Get a group via name.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Group found."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Group not found or storage problems.") })
 		public Response getGroup(@PathParam("name") String name) {
-			String identifier = group_prefix + "_" + name;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -414,8 +372,9 @@ public class ContactService extends RESTService {
 		}
 
 		/**
-		 * Adds a group. Creates a group agent and stores the name in an enevelope. The evnelope makes it possible to
-		 * request the Agent again and an extra envelope encrypted with the service accessible for all users.
+		 * Adds a group. Creates a group agent and stores the name in an enevelope. The
+		 * evnelope makes it possible to request the Agent again and an extra envelope
+		 * encrypted with the service accessible for all users.
 		 * 
 		 * @param name Name of your group
 		 * @return Returns a Response whether the group could be added or not.
@@ -425,16 +384,9 @@ public class ContactService extends RESTService {
 		@POST
 		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Group created."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems or group already exist.") })
-		@ApiOperation(
-				value = "Create Group",
-				notes = "Creates a group")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Group created."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems or group already exist.") })
+		@ApiOperation(value = "Create Group", notes = "Creates a group")
 		public Response addGroup(@PathParam("name") String name) {
 			// Setting owner group members
 			Agent[] members = new Agent[1];
@@ -442,10 +394,12 @@ public class ContactService extends RESTService {
 			Envelope env = null;
 			Envelope env2 = null;
 			String id = "";
-			String identifier = group_prefix + "_" + name;
-			String identifier2 = group_prefix;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
+			String identifier2 = contactStorerAgentPWStatic;
 			GroupAgent groupAgent;
 			ContactContainer cc = null;
+			UserAgent contactStorer = null;
+			logger.log(Level.SEVERE, "Can't persist to network storage!ugauga" + identifier2, "ugauga");
 			try {
 				try {
 					Context.get().requestEnvelope(identifier);
@@ -464,15 +418,28 @@ public class ContactService extends RESTService {
 				}
 				// writing to user
 				try {
-					// try to add group to group list
-					env2 = Context.get().requestEnvelope(identifier2, Context.get().getServiceAgent());
-					cc = (ContactContainer) env2.getContent();
-				} catch (EnvelopeNotFoundException e) {
-					// create new group list
-					cc = new ContactContainer();
-					env2 = Context.get().createEnvelope(identifier2, Context.get().getServiceAgent());
-					env2.setPublic();
+					logger.log(Level.SEVERE, "agentcoming" + identifier2, "ugauga");
+					contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+							Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+					logger.log(Level.SEVERE, "wherebla" + identifier2, "ugauga");
+					contactStorer.unlock(contactStorerAgentPWStatic);
+					logger.log(Level.SEVERE, "whereagent" + identifier2, "ugauga");
+					try {
+						// try to add group to group list
+						env2 = Context.get().requestEnvelope(identifier2, contactStorer);
+						cc = (ContactContainer) env2.getContent();
+						System.out.println(cc);
+					} catch (EnvelopeNotFoundException e) {
+						// create new group list
+						cc = new ContactContainer();
+						env2 = Context.get().createEnvelope(identifier2, contactStorer);
+						env2.setPublic();
+					}
+				} catch (Exception e) {
+					System.out.println("apparently no contact storer there or not unlockable");
+					logger.log(Level.SEVERE, "wrong" + identifier2, e);
 				}
+
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't persist to network storage!", e);
@@ -482,7 +449,10 @@ public class ContactService extends RESTService {
 
 			cc.addGroup(name, id);
 			env2.setContent(cc);
-			service.storeEnvelope(env2, Context.get().getServiceAgent());
+			if (contactStorer != null) {
+				service.storeEnvelope(env2, contactStorer);
+			} else
+				logger.log(Level.SEVERE, "Contactstorer is Null!", "No stacktrace bro");
 			return Response.status(Status.OK).entity("" + id).build();
 		}
 
@@ -496,20 +466,14 @@ public class ContactService extends RESTService {
 		@DELETE
 		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Group removed."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Group does not exist or storage problems.") })
-		@ApiOperation(
-				value = "Remove Group",
-				notes = "Removes a group.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Group removed."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Group does not exist or storage problems.") })
+		@ApiOperation(value = "Remove Group", notes = "Removes a group.")
 		public Response removeGroup(@PathParam("name") String name) {
 			Envelope env = null;
 			try {
-				String identifier = group_prefix + "_" + name;
+
+				String identifier = contactStorerAgentPWStatic + "_" + name;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				String groupID = cc.getGroups().get(name);
@@ -540,19 +504,12 @@ public class ContactService extends RESTService {
 		@GET
 		@Path("/{name}/member")
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(
-				value = "Get Group Member",
-				notes = "Get all members of your group.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got all members of a group"),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems.") })
+		@ApiOperation(value = "Get Group Member", notes = "Get all members of your group.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got all members of a group"),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getGroupMember(@PathParam("name") String name) {
 			JSONObject result = new JSONObject();
-			String identifier = group_prefix + "_" + name;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -571,8 +528,7 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.OK).entity(result).build();
 		}
-		
-		
+
 		/**
 		 * Retrieve id number of a group.
 		 * 
@@ -583,19 +539,12 @@ public class ContactService extends RESTService {
 		@GET
 		@Path("/{name}/id")
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(
-				value = "Get Group Id",
-				notes = "Get the Id of the given group.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got group id!"),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems.") })
+		@ApiOperation(value = "Get Group Id", notes = "Get the Id of the given group.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got group id!"),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getGroupId(@PathParam("name") String name) {
 			JSONObject result = new JSONObject();
-			String identifier = group_prefix + "_" + name;
+			String identifier = contactStorerAgentPWStatic + "_" + name;
 			try {
 				Envelope stored = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) stored.getContent();
@@ -604,8 +553,8 @@ public class ContactService extends RESTService {
 				groupAgent.unlock(Context.get().getMainAgent());
 				System.out.println(groupAgent);
 				System.out.println(groupAgent.getIdentifier());
-					result.put("groupId", groupAgent.getIdentifier());
-				
+				result.put("groupId", groupAgent.getIdentifier());
+
 			} catch (Exception e) {
 				// write error to logfile and console
 				logger.log(Level.SEVERE, "Can't get group id!", e);
@@ -613,39 +562,29 @@ public class ContactService extends RESTService {
 			}
 			return Response.status(Status.OK).entity(result).build();
 		}
-		
 
 		/**
 		 * Adds a member to a group.
 		 * 
 		 * @param groupName Name of the group.
-		 * @param userName Name of the user.
+		 * @param userName  Name of the user.
 		 * @return Returns a Response
 		 * @since 0.1
 		 */
 		@POST
 		@Path("/{name}/member/{user}")
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Groupmember added."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_NOT_FOUND,
-								message = "Agent does not exist.") })
-		@ApiOperation(
-				value = "Add Group Member",
-				notes = "Add a member to a group.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Groupmember added."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems."),
+				@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Agent does not exist.") })
+		@ApiOperation(value = "Add Group Member", notes = "Add a member to a group.")
 		public Response addGroupMember(@PathParam("name") String groupName, @PathParam("user") String userName) {
 			Envelope env = null;
 			String addID = "-1";
 			Agent test = null;
 			GroupAgent groupAgent = null;
 			try {
-				String identifier = group_prefix + "_" + groupName;
+				String identifier = contactStorerAgentPWStatic + "_" + groupName;
 				// Get envelope
 				env = Context.get().requestEnvelope(identifier, Context.get().getMainAgent());
 				ContactContainer cc = (ContactContainer) env.getContent();
@@ -670,31 +609,22 @@ public class ContactService extends RESTService {
 		 * Removes a member of a group
 		 * 
 		 * @param groupName Name of the group
-		 * @param userName Name of the user
+		 * @param userName  Name of the user
 		 * @return Returns a Response
 		 * @since 0.1
 		 */
 		@DELETE
 		@Path("/{name}/member/{user}")
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Groupmember removed."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_NOT_FOUND,
-								message = "Agent does not exist.") })
-		@ApiOperation(
-				value = "Remove Group Member",
-				notes = "Removes a member from a group.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Groupmember removed."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems."),
+				@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Agent does not exist.") })
+		@ApiOperation(value = "Remove Group Member", notes = "Removes a member from a group.")
 		public Response removeGroupMember(@PathParam("name") String groupName, @PathParam("user") String userName) {
 			Envelope env = null;
 			GroupAgent groupAgent = null;
 			try {
-				String identifier = group_prefix + "_" + groupName;
+				String identifier = contactStorerAgentPWStatic + "_" + groupName;
 				env = Context.get().requestEnvelope(identifier);
 				ContactContainer cc = (ContactContainer) env.getContent();
 				try {
@@ -719,21 +649,8 @@ public class ContactService extends RESTService {
 	}
 
 	@Path("/addressbook") // this is the root resource
-	@Api(
-			value = "Address Book Resource")
-	@SwaggerDefinition(
-			info = @Info(
-					title = "laspeer Contact Service",
-					version = "0.1",
-					description = "A las2peer Contact Service for managing your contacts and groups.",
-					termsOfService = "",
-					contact = @Contact(
-							name = "Alexander Neumann",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
-							email = "neumann@dbis.rwth-aachen.de"),
-					license = @License(
-							name = "ACIS License (BSD3)",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	@Api(value = "Address Book Resource")
+	@SwaggerDefinition(info = @Info(title = "laspeer Contact Service", version = "0.1", description = "A las2peer Contact Service for managing your contacts and groups.", termsOfService = "", contact = @Contact(name = "Alexander Neumann", url = "https://github.com/rwth-acis/las2peer-Contact-Service", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "ACIS License (BSD3)", url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class AddressBookResource {
 		ContactService service = (ContactService) Context.get().getService();
 
@@ -745,31 +662,28 @@ public class ContactService extends RESTService {
 		 */
 		@POST
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiOperation(
-				value = "Add to Address Book",
-				notes = "Add yourself to the address book.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Added"),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems or already in list.") })
+		@ApiOperation(value = "Add to Address Book", notes = "Add yourself to the address book.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Added"),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems or already in list.") })
 		public Response addToAddressBook() {
 			Agent owner = Context.get().getMainAgent();
 			String identifier = address_prefix;
 			Envelope env = null;
 			boolean added = false;
 			ContactContainer cc = null;
+			UserAgent contactStorer = null;
 			try {
+				contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+						Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+				contactStorer.unlock(contactStorerAgentPWStatic);
 				try {
-					env = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().requestEnvelope(identifier, contactStorer);
 					cc = (ContactContainer) env.getContent();
 					added = cc.addContact(owner.getIdentifier());
 				} catch (EnvelopeNotFoundException ex) {
 					cc = new ContactContainer();
 					added = cc.addContact(owner.getIdentifier());
-					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().createEnvelope(identifier, contactStorer);
 					env.setPublic();
 				}
 			} catch (Exception e) {
@@ -780,7 +694,7 @@ public class ContactService extends RESTService {
 			}
 
 			env.setContent(cc);
-			service.storeEnvelope(env, Context.get().getServiceAgent());
+			service.storeEnvelope(env, contactStorer);
 			if (added) {
 				return Response.status(Status.OK).entity("Added to addressbook.").build();
 			} else {
@@ -796,30 +710,27 @@ public class ContactService extends RESTService {
 		 */
 		@DELETE
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiOperation(
-				value = "Remove from Address Book",
-				notes = "Removes yourself from the address book.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Removed from address book."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems or you were not in the list.") })
+		@ApiOperation(value = "Remove from Address Book", notes = "Removes yourself from the address book.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Removed from address book."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems or you were not in the list.") })
 		public Response removeFromAddressBook() {
 			String identifier = address_prefix;
 			Envelope env = null;
 			ContactContainer cc = null;
 			boolean deleted = false;
+			UserAgent contactStorer = null;
 			try {
+				contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+						Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+				contactStorer.unlock(contactStorerAgentPWStatic);
 				try {
-					env = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().requestEnvelope(identifier, contactStorer);
 					cc = (ContactContainer) env.getContent();
 					String userID = Context.get().getMainAgent().getIdentifier();
 					deleted = cc.removeContact(userID);
 				} catch (EnvelopeNotFoundException ex) {
 					cc = new ContactContainer();
-					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().createEnvelope(identifier, contactStorer);
 					env.setPublic();
 				}
 			} catch (Exception e) {
@@ -830,7 +741,7 @@ public class ContactService extends RESTService {
 			}
 
 			env.setContent(cc);
-			service.storeEnvelope(env, Context.get().getServiceAgent());
+			service.storeEnvelope(env, contactStorer);
 			if (deleted) {
 				return Response.status(Status.OK).entity("Removed from list.").build();
 			} else {
@@ -846,22 +757,19 @@ public class ContactService extends RESTService {
 		 */
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(
-				value = "Get Address Book",
-				notes = "Get all contacts from the address book.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Contacts received."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "Storage problems.") })
+		@ApiOperation(value = "Get Address Book", notes = "Get all contacts from the address book.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Contacts received."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "Storage problems.") })
 		public Response getAddressBook() {
 			String identifier = address_prefix;
 			JSONObject result = new JSONObject();
+			UserAgent contactStorer = null;
 			try {
+				contactStorer = (UserAgent) Context.getCurrent().fetchAgent(
+						Context.getCurrent().getUserAgentIdentifierByLoginName(contactStorerAgentNameStatic));
+				contactStorer.unlock(contactStorerAgentPWStatic);
 				try {
-					Envelope stored = Context.get().requestEnvelope(identifier, Context.get().getServiceAgent());
+					Envelope stored = Context.get().requestEnvelope(identifier, contactStorer);
 					ContactContainer cc = (ContactContainer) stored.getContent();
 					HashSet<String> list = cc.getUserList();
 					UserAgent user;
@@ -878,10 +786,10 @@ public class ContactService extends RESTService {
 				} catch (EnvelopeNotFoundException ex) {
 					Envelope env = null;
 					ContactContainer cc = new ContactContainer();
-					env = Context.get().createEnvelope(identifier, Context.get().getServiceAgent());
+					env = Context.get().createEnvelope(identifier, contactStorer);
 					env.setPublic();
 					env.setContent(cc);
-					service.storeEnvelope(env, Context.get().getServiceAgent());
+					service.storeEnvelope(env, contactStorer);
 					return Response.status(Status.OK).entity(result).build();
 				}
 			} catch (Exception e) {
@@ -894,43 +802,24 @@ public class ContactService extends RESTService {
 	}
 
 	@Path("/user") // this is the root resource
-	@Api(
-			value = "User Resource")
-	@SwaggerDefinition(
-			info = @Info(
-					title = "laspeer Contact Service",
-					version = "0.1",
-					description = "A las2peer Contact Service for managing your contacts and groups.",
-					termsOfService = "",
-					contact = @Contact(
-							name = "Alexander Neumann",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
-							email = "neumann@dbis.rwth-aachen.de"),
-					license = @License(
-							name = "ACIS License (BSD3)",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	@Api(value = "User Resource")
+	@SwaggerDefinition(info = @Info(title = "laspeer Contact Service", version = "0.1", description = "A las2peer Contact Service for managing your contacts and groups.", termsOfService = "", contact = @Contact(name = "Alexander Neumann", url = "https://github.com/rwth-acis/las2peer-Contact-Service", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "ACIS License (BSD3)", url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class UserResource {
 		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Function to set your information.
 		 * 
-		 * @param content A JSON string containing firstName, lastName and the userImage.
+		 * @param content A JSON string containing firstName, lastName and the
+		 *                userImage.
 		 * @return Response of the request.
 		 * @since 0.1
 		 */
 		@POST
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Updated user information."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "RMI error or wrong json.") })
-		@ApiOperation(
-				value = "Update User Information",
-				notes = "Updates the name and the userimage.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Updated user information."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "RMI error or wrong json.") })
+		@ApiOperation(value = "Update User Information", notes = "Updates the name and the userimage.")
 		public Response updateUserInformationREST(String content) {
 			try {
 				JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
@@ -958,21 +847,15 @@ public class ContactService extends RESTService {
 		/**
 		 * Function to get the information of a user.
 		 * 
-		 * @return Returns a JSON string containing firstName, lastName and the userImage.
+		 * @return Returns a JSON string containing firstName, lastName and the
+		 *         userImage.
 		 * @since 0.1
 		 */
 		@GET
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiOperation(
-				value = "Get User Information",
-				notes = "Returns the name and the user image.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got user information."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "RMI error.") })
+		@ApiOperation(value = "Get User Information", notes = "Returns the name and the user image.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got user information."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "RMI error.") })
 		public Response getUserInformation() {
 			String returnString = "";
 			try {
@@ -1002,23 +885,16 @@ public class ContactService extends RESTService {
 		 * Function to get the information of a user.
 		 * 
 		 * @param name The name of the requested user.
-		 * @return Returns a JSON string containing firstName, lastName and the userImage depending on the permission
-		 *         set to this values.
+		 * @return Returns a JSON string containing firstName, lastName and the
+		 *         userImage depending on the permission set to this values.
 		 * @since 0.1
 		 */
 		@GET
 		@Path("/{name}")
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiOperation(
-				value = "Get User Information for Name",
-				notes = "Returns the name and the user image for a given user.")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got user information"),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "RMI error or user does not exist.") })
+		@ApiOperation(value = "Get User Information for Name", notes = "Returns the name and the user image for a given user.")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got user information"),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "RMI error or user does not exist.") })
 		public Response getUserInformation(@PathParam("name") String name) {
 			String returnString = "";
 			try {
@@ -1042,42 +918,23 @@ public class ContactService extends RESTService {
 	}
 
 	@Path("/permission") // this is the root resource
-	@Api(
-			value = "Permission Resource")
-	@SwaggerDefinition(
-			info = @Info(
-					title = "laspeer Contact Service",
-					version = "0.1",
-					description = "A las2peer Contact Service for managing your contacts and groups.",
-					termsOfService = "",
-					contact = @Contact(
-							name = "Alexander Neumann",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service",
-							email = "neumann@dbis.rwth-aachen.de"),
-					license = @License(
-							name = "ACIS License (BSD3)",
-							url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
+	@Api(value = "Permission Resource")
+	@SwaggerDefinition(info = @Info(title = "laspeer Contact Service", version = "0.1", description = "A las2peer Contact Service for managing your contacts and groups.", termsOfService = "", contact = @Contact(name = "Alexander Neumann", url = "https://github.com/rwth-acis/las2peer-Contact-Service", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "ACIS License (BSD3)", url = "https://github.com/rwth-acis/las2peer-Contact-Service/blob/master/LICENSE")))
 	public static class PermissionResource {
 		ContactService service = (ContactService) Context.get().getService();
 
 		/**
 		 * Function to get the user's permission setting
 		 * 
-		 * @return Returns a JSON string containing boolean values for firstName, lastName and the userImage.
+		 * @return Returns a JSON string containing boolean values for firstName,
+		 *         lastName and the userImage.
 		 * @since 0.1
 		 */
 		@GET
 		@Produces(MediaType.TEXT_PLAIN)
-		@ApiOperation(
-				value = "Get User Permission",
-				notes = "Returns a field of the user's permissions")
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Got user permission."),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "RMI error.") })
+		@ApiOperation(value = "Get User Permission", notes = "Returns a field of the user's permissions")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Got user permission."),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "RMI error.") })
 		public Response getUserPermissions() {
 			String returnString = "No Response";
 			try {
@@ -1105,22 +962,16 @@ public class ContactService extends RESTService {
 		/**
 		 * Updates the user's permission setting (firstName, lastName, userImage)
 		 * 
-		 * @param content JSON string containing boolean values for firstName, lastName and the userImage.
+		 * @param content JSON string containing boolean values for firstName, lastName
+		 *                and the userImage.
 		 * @return Response
 		 * @since 0.1
 		 */
 		@POST
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiResponses(
-				value = { @ApiResponse(
-						code = HttpURLConnection.HTTP_OK,
-						message = "Updated permissions"),
-						@ApiResponse(
-								code = HttpURLConnection.HTTP_BAD_REQUEST,
-								message = "RMI error or wrong json.") })
-		@ApiOperation(
-				value = "updateUserPermission",
-				notes = "Updates the name and the userimage")
+		@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Updated permissions"),
+				@ApiResponse(code = HttpURLConnection.HTTP_BAD_REQUEST, message = "RMI error or wrong json.") })
+		@ApiOperation(value = "updateUserPermission", notes = "Updates the name and the userimage")
 		public Response updateUserPermissionREST(String content) {
 			try {
 				JSONParser parser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
@@ -1177,7 +1028,7 @@ public class ContactService extends RESTService {
 	/**
 	 * Envelope helper method for storing an envelope.
 	 * 
-	 * @param env Envelope.
+	 * @param env   Envelope.
 	 * @param owner Agent who owns the envelope.
 	 * @since 0.1
 	 */
