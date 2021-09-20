@@ -250,10 +250,6 @@ task cleanAll {
     }
 }
 
-jacoco {
-    toolVersion = "0.8.6"
-    reportsDirectory = file("$projectDir/export/jacoco")
-}
 
 test {
     finalizedBy jacocoTestReport // report is always generated after tests run
