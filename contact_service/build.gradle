@@ -22,7 +22,7 @@ dependencies {
 
     // las2peer bundle which is not necessary in the runtime path
     // compileOnly will be moved into the lib dir afterwards
-    compileOnly "i5:las2peer-bundle:${project.property('core.version')}"
+    implementation "i5:las2peer-bundle:${project.property('core.version')}"
 
     // Add service dependencies here
     // example:
@@ -31,7 +31,7 @@ dependencies {
 
 configurations {
     // This ensures las2peer is available in the tests, but won't be bundled
-    testCompile.extendsFrom compileOnly
+    testImplementation.extendsFrom implementation
 }
 
 jar {
@@ -65,7 +65,7 @@ tasks.withType(Jar) {
 }
 
 javadoc {
-    destinationDir = file("$projectDir/export/doc")
+    destinationDirectory = file("$projectDir/export/doc")
 }
 
 build.dependsOn "javadoc"
@@ -141,25 +141,25 @@ pause
 }
 
 
-task export (type: Copy, dependsOn: build) {
-    into "$buildDir/export"
+// task export (type: Copy, dependsOn: build) {
+//     into "$buildDir/export"
 
-    into("service") {
-        from jar
-    }
-    into("lib") {
-        from configurations.compileOnly
-    }
-    into("bin") {
-        from "../bin"
-    }
-    into("etc") {
-        from "../etc"
-    }
-    into("javadoc") {
-        from "$buildDir/docs/javadoc"
-    }
-}
+//     into("service") {
+//         from jar
+//     }
+//     into("lib") {
+//         from configurations.compileOnly
+//     }
+//     into("bin") {
+//         from "../bin"
+//     }
+//     into("etc") {
+//         from "../etc"
+//     }
+//     into("javadoc") {
+//         from "$buildDir/docs/javadoc"
+//     }
+// }
 
 
 build.dependsOn "startscripts"
