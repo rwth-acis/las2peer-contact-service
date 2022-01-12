@@ -25,3 +25,4 @@ restMapping.xml
 # Ignore Gradle build output directory
 build
 .project
+contact_service/bin/

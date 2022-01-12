@@ -65,7 +65,7 @@ tasks.withType(Jar) {
 }
 
 javadoc {
-    destinationDirectory = file("$projectDir/export/doc")
+    destinationDir = file("$projectDir/export/doc")
 }
 
 build.dependsOn "javadoc"
