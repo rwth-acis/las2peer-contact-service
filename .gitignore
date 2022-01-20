@@ -2,6 +2,7 @@ contact_service/export/
 contact_service/output/
 contact_service/log/
 contact_service/tmp/
+bin
 log/
 output/
 export/
@@ -25,3 +26,4 @@ restMapping.xml
 # Ignore Gradle build output directory
 build
 .project
+contact_service/bin/
