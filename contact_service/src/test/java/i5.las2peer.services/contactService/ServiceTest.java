@@ -5,9 +5,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +34,7 @@ import i5.las2peer.testing.TestSuite;
  * Example Test Class demonstrating a basic JUnit test structure.
  *
  */
+
 public class ServiceTest {
 
 	private static final String HTTP_ADDRESS = "http://127.0.0.1";
@@ -43,10 +48,11 @@ public class ServiceTest {
 	private static UserAgentImpl agentAdam;
 	private static UserAgentImpl agentEve;
 	private static UserAgentImpl agentAbel;
+	private static UserAgentImpl agentContact;
 	private static final String passAdam = "adamspass";
 	private static final String passEve = "evespass";
 	private static final String passAbel = "abelspass";
-
+	private static String passContact = "";
 	private static final String mainPath = "contactservice/";
 	private static ServiceAgentImpl testService;
 	private static ServiceAgentImpl testService2;
@@ -54,13 +60,25 @@ public class ServiceTest {
 	/**
 	 * Called before the tests start.
 	 * 
-	 * Sets up the node and initializes connector and users that can be used throughout the tests.
+	 * Sets up the node and initializes connector and users that can be used
+	 * throughout the tests.
 	 * 
 	 * @throws Exception
 	 */
 	@Before
 	public void startServer() throws Exception {
+		Properties prop = new Properties();
+		String contactAgentName = "";
+		System.out.println("poop is");
+		try {
+			prop.load(new FileInputStream("etc/i5.las2peer.services.contactService.ContactService.properties"));
+			passContact = prop.getProperty("contactStorerAgentPW");
+			contactAgentName = prop.getProperty("contactStorerAgentName");
 
+		} catch (IOException e) {
+			System.out.println(e + "was error");
+			e.printStackTrace();
+		}
 		// start node
 		nodes = TestSuite.launchNetwork(1, STORAGE_MODE.FILESYSTEM, true);
 		node = nodes.get(0);
@@ -70,19 +88,24 @@ public class ServiceTest {
 		agentEve.unlock(passEve);
 		agentAbel = MockAgentFactory.getAbel();
 		agentAbel.unlock(passAbel);
+		agentContact = UserAgentImpl.createUserAgent(passContact);
+		agentContact.unlock(passContact);
+		// agentContact.unlock(passContact);
+		agentContact.setLoginName(contactAgentName);
+		System.out.println("pope" + agentContact.getPassphrase() + agentContact.getLoginName() + passContact + "wtf"
+				+ agentContact.getIdentifier() + agentAbel.getIdentifier());
+		node.storeAgent(agentContact);
 		node.storeAgent(agentAdam);
 		node.storeAgent(agentEve);
 		node.storeAgent(agentAbel);
 
 		// during testing, the specified service version does not matter
 		testService = ServiceAgentImpl.createServiceAgent(
-				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.3"), "a pass");
+				ServiceNameVersion.fromString("i5.las2peer.services.contactService.ContactService@0.2.4"), "a pass");
 		testService.unlock("a pass");
-
 		testService2 = ServiceAgentImpl.createServiceAgent(ServiceNameVersion
-				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.3"), "a pass");
+				.fromString("i5.las2peer.services.userInformationService.UserInformationService@0.2.5"), "a pass");
 		testService2.unlock("a pass");
-
 		node.registerReceiver(testService);
 		node.registerReceiver(testService2);
 
@@ -99,7 +122,8 @@ public class ServiceTest {
 	}
 
 	/**
-	 * Called after the tests have finished. Shuts down the server and prints out the connector log file for reference.
+	 * Called after the tests have finished. Shuts down the server and prints out
+	 * the connector log file for reference.
 	 * 
 	 * @throws Exception
 	 */
@@ -128,6 +152,7 @@ public class ServiceTest {
 
 	@Test
 	public void testAddRemoveContact() {
+
 		MiniClient c = new MiniClient();
 		c.setConnectorEndpoint(connector.getHttpEndpoint());
 
@@ -376,7 +401,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentEve.unlock(passEve);
-			String identifier = "groups_testGroup";
+			String identifier = passContact + "_testGroup";
 			createEnvelope(identifier, agentEve);
 			ClientResponse result = c.sendRequest("POST", mainPath + "groups/testGroup", "");
 			assertEquals(400, result.getHttpCode());
@@ -394,7 +419,7 @@ public class ServiceTest {
 		try {
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			agentAdam.unlock(passAdam);
-			String identifier = "groups_testGroup";
+			String identifier = passContact + "_testGroup";
 			ContactContainer cc = new ContactContainer();
 			cc.addGroup("testGroup", "1337");
 			createEnvelopeWithContent(identifier, agentAdam, cc);
@@ -456,10 +481,13 @@ public class ServiceTest {
 			EnvelopeVersion stored = node
 					.fetchEnvelope(testService.getServiceNameVersion().getName() + "$" + "addressbook");
 			ContactContainer cc = (ContactContainer) stored.getContent();
+			System.out.println("1");
 			cc.addContact("1337");
+			System.out.println("2");
 			EnvelopeVersion env = node.createUnencryptedEnvelope(stored, cc);
-			node.storeEnvelope(env, testService);
-
+			System.out.println("3");
+			node.storeEnvelope(env, agentContact);
+			System.out.println("4");
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			result6 = c.sendRequest("GET", mainPath + "addressbook", "");
 			assertEquals(200, result6.getHttpCode());
@@ -676,8 +704,8 @@ public class ServiceTest {
 			System.out.println("Result of 'testBlockEnvelopes': " + result.getResponse().trim());
 
 			// Blocking groups
-			createEnvelope("groups", agentEve);
-			createEnvelope("groups_test", agentEve);
+			createEnvelope(passContact, agentEve);
+			createEnvelope(passContact + "_test", agentEve);
 			c.setLogin(agentAdam.getIdentifier(), passAdam);
 			ClientResponse result2 = c.sendRequest("GET", mainPath + "groups", "", "text/plain", "application/json",
 					new HashMap<String, String>());
