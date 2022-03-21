@@ -27,3 +27,4 @@ restMapping.xml
 build
 .project
 contact_service/bin/
+etc/launcher-configuration.ini
