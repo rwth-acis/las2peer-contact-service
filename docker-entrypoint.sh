@@ -20,9 +20,7 @@ export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties
 
 
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
-echo ${SERVICE}
-echo ${CONTACT_STORER_NAME}
-echo ${CONTACT_STORER_PW}
+
 
 echo "agent-user-contact.xml;${CONTACT_STORER_PW}"  | cat - etc/startup/passphrases.txt > temp && mv temp etc/startup/passphrases.txt
 
@@ -100,7 +98,6 @@ if [[ -z "${@}" ]]; then
     if [ -n "$LAS2PEER_ETH_HOST" ]; then
         exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED --ethereum-mnemonic "$(selectMnemonic)" uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()"
     else
-        echo test
         exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\)  startWebConnector
     fi
 else

@@ -13,6 +13,7 @@ WORKDIR /src
 # run the rest as unprivileged user
 USER las2peer
 RUN chmod +x gradlew && ./gradlew build --exclude-task test
+RUN chmod +x /src/docker-entrypoint.sh
 
 EXPOSE $LAS2PEER_PORT
 ENTRYPOINT ["/src/docker-entrypoint.sh"]
